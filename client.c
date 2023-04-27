@@ -152,12 +152,14 @@ void singleplayer() {
     while (1) {
         process_input(&player, &direction);
         if (direction == 4) {
+            //player quit
             break;
         }
         if (player.current_direction != -10) {
             move_snake(&player, &direction);
         }
         if (direction == 5) {
+            //player dead
             break;
         }
         render_map();

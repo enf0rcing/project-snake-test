@@ -185,11 +185,11 @@ int main() {
     //prepare to connections
     struct sockaddr_in remoteaddr;
     int remoteaddrlen = sizeof(remoteaddr);
-    HANDLE sthread, threads[2];
+    HANDLE threads[2];
     init_map();
     init_apple();
     //create a thread for sending data
-    sthread = CreateThread(NULL, 0, sendthread, 0, 0, NULL);
+    CreateThread(NULL, 0, sendthread, 0, 0, NULL);
     //if connected, create player1 thread
     printf("Waiting for player1...\n");
     ClientSocket[0] = accept(ListenSocket, (LPSOCKADDR) &remoteaddr, &remoteaddrlen);
