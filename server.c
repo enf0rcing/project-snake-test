@@ -203,6 +203,7 @@ int main() {
 
         //start game
         while (1) {
+            printf("starting a new game...\n");
             flag = 1;
             init_map();
             init_apple();

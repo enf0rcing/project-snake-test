@@ -135,7 +135,7 @@ void move_snake(snake *s, int *d) {
 int init_ui() {
     system("cls");
     int ret;
-    printf("choose a game mode:\n");
+    printf("choose a game mode(control:\"wasd\",quit in game:\"q\"):\n");
     printf("1.singleplayer\n");
     printf("2.multiplayer\n");
     printf("3.quit\n");
