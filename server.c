@@ -19,7 +19,7 @@ const int shift[4][2] = {{-1, 0},
                          {0,  1},
                          {1,  0},
                          {0,  -1}};
-int apple[2];
+int flag, apple[2];
 char map[ROW * COL];
 SOCKET ClientSocket[2];
 
@@ -85,7 +85,7 @@ void process_input(snake *s, char input, int *d) {
 }
 
 void move_snake(snake *s, int *d) {
-    map[s->x[s->len - 1] * COL + s->y[s->len - 1]] = ' ';
+    int tmpx = s->x[s->len - 1], tmpy = s->y[s->len - 1];
     for (int i = s->len; i > 0; i--) {
         s->x[i] = s->x[i - 1];
         s->y[i] = s->y[i - 1];
@@ -96,6 +96,7 @@ void move_snake(snake *s, int *d) {
         *d = 5;
         return;
     }
+    map[tmpx * COL + tmpy] = ' ';
     if (s->x[0] == apple[0] && s->y[0] == apple[1]) {
         s->len++;
         init_apple();
@@ -107,11 +108,12 @@ DWORD WINAPI player1thread() {
     snake player1;
     init_snake(&player1);
     int direction1 = -1;
-    char recvdata1[1];
+    char recvdata1;
     while (1) {
         //receive data from client
-        recv(ClientSocket[0], recvdata1, 1, 0);
-        process_input(&player1, recvdata1[0], &direction1);
+        recv(ClientSocket[0], &recvdata1, 1, 0);
+
+        process_input(&player1, recvdata1, &direction1);
         if (direction1 == 4) {
             //player quit
             break;
@@ -132,11 +134,12 @@ DWORD WINAPI player2thread() {
     snake player2;
     init_snake(&player2);
     int direction2 = -1;
-    char recvdata2[1];
+    char recvdata2;
     while (1) {
         //receive data from client
-        recv(ClientSocket[1], recvdata2, 1, 0);
-        process_input(&player2, recvdata2[0], &direction2);
+        recv(ClientSocket[1], &recvdata2, 1, 0);
+
+        process_input(&player2, recvdata2, &direction2);
         if (direction2 == 4) {
             //player quit
             break;
@@ -154,21 +157,28 @@ DWORD WINAPI player2thread() {
 }
 
 DWORD WINAPI sendthread() {
-    while (1) {
+    while (flag) {
         for (int i = 0; i < 2; i++) {
             //send data to clients
             send(ClientSocket[i], map, sizeof(map), 0);
         }
         Sleep(200);
     }
+    map[0] = 'r';
+    for (int i = 0; i < 2; i++) {
+        //send data to clients
+        send(ClientSocket[i], map, sizeof(map), 0);
+    }
     return 0;
 }
 
 int main() {
     srand((unsigned) time(NULL));
+
     //init winsock
     WSADATA wsaData;
     WSAStartup(MAKEWORD(2, 2), &wsaData);
+
     //create listen socket
     SOCKET ListenSocket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
     struct sockaddr_in hints;
@@ -176,36 +186,54 @@ int main() {
     hints.sin_family = AF_INET;
     hints.sin_addr.s_addr = INADDR_ANY;
     hints.sin_port = htons(DEFAULT_PORT);
+
     //bind listen socket
-    bind(ListenSocket, (LPSOCKADDR) &hints, sizeof(hints));
-    //start listening
-    printf("Listening...");
-    listen(ListenSocket, SOMAXCONN);
-    printf("success.\n");
-    //prepare to connections
-    struct sockaddr_in remoteaddr;
-    int remoteaddrlen = sizeof(remoteaddr);
-    HANDLE threads[2];
-    init_map();
-    init_apple();
-    //create a thread for sending data
-    CreateThread(NULL, 0, sendthread, 0, 0, NULL);
-    //if connected, create player1 thread
-    printf("Waiting for player1...\n");
-    ClientSocket[0] = accept(ListenSocket, (LPSOCKADDR) &remoteaddr, &remoteaddrlen);
-    printf("connected: %s\n", inet_ntoa(remoteaddr.sin_addr));
-    threads[0] = CreateThread(NULL, 0, player1thread, 0, 0, NULL);
-    //if connected, create player2 thread
-    printf("Waiting for player2...\n");
-    ClientSocket[1] = accept(ListenSocket, (LPSOCKADDR) &remoteaddr, &remoteaddrlen);
-    printf("connected: %s\n", inet_ntoa(remoteaddr.sin_addr));
-    threads[1] = CreateThread(NULL, 0, player2thread, 0, 0, NULL);
-    //wait for player threads shutdown
-    WaitForMultipleObjects(2, threads, TRUE, INFINITE);
-    //clean up
-    for (int i = 0; i < 2; i++) {
-        closesocket(ClientSocket[i]);
+    if (bind(ListenSocket, (LPSOCKADDR) &hints, sizeof(hints)) == SOCKET_ERROR) {
+        printf("bind error\n");
+        system("pause");
+    } else {
+        //start listening
+        listen(ListenSocket, SOMAXCONN);
+        printf("Listening...\n");
+
+        //prepare to connections
+        struct sockaddr_in remoteaddr;
+        int remoteaddrlen = sizeof(remoteaddr);
+        HANDLE playerthreads[2];
+
+        //start game
+        while (1) {
+            flag = 1;
+            init_map();
+            init_apple();
+
+            //create a thread for sending data
+            CreateThread(NULL, 0, sendthread, 0, 0, NULL);
+
+            //if connected, create player1 thread
+            printf("Waiting for player1...\n");
+            ClientSocket[0] = accept(ListenSocket, (LPSOCKADDR) &remoteaddr, &remoteaddrlen);
+            printf("connected: %s\n", inet_ntoa(remoteaddr.sin_addr));
+            playerthreads[0] = CreateThread(NULL, 0, player1thread, 0, 0, NULL);
+
+            //if connected, create player2 thread
+            printf("Waiting for player2...\n");
+            ClientSocket[1] = accept(ListenSocket, (LPSOCKADDR) &remoteaddr, &remoteaddrlen);
+            printf("connected: %s\n", inet_ntoa(remoteaddr.sin_addr));
+            playerthreads[1] = CreateThread(NULL, 0, player2thread, 0, 0, NULL);
+
+            //wait for player threads shutdown
+            WaitForMultipleObjects(2, playerthreads, TRUE, INFINITE);
+            flag = 0;
+            Sleep(200);
+        }
+
+        //clean up
+        for (int i = 0; i < 2; i++) {
+            closesocket(ClientSocket[i]);
+        }
     }
+    //clean up
     closesocket(ListenSocket);
     WSACleanup();
 
