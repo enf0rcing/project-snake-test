@@ -44,7 +44,6 @@ void init_snake(char *map, snake *s, char symbol) {
 }
 
 void process_input(snake *s, char input, int *d) {
-    *d = DEFAULT_DIRECTION;
     switch (input) {
         case 'w':
             *d = 0;
@@ -62,6 +61,7 @@ void process_input(snake *s, char input, int *d) {
             *d = QUIT_DIRECTION;
             break;
         default:
+            *d = DEFAULT_DIRECTION;
             break;
     }
     if (*d == DEFAULT_DIRECTION || abs(*d - s->current_direction) == 2) {
