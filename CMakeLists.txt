@@ -5,5 +5,5 @@ set(CMAKE_C_STANDARD 11)
 
 link_libraries(ws2_32)
 
-add_executable(client client.c)
-add_executable(server server.c)
+add_executable(client client.c share.c)
+add_executable(server server.c share.c)

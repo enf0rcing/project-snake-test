@@ -2,111 +2,19 @@
 // Created by V on 2023/4/26.
 //
 #include <stdio.h>
-#include <stdlib.h>
+#include <time.h>
 #include <winsock2.h>
 #include <windows.h>
-#include <time.h>
+#include "share.h"
 
-#define DEFAULT_PORT 19998
-#define ROW 25
-#define COL 50
-
-typedef struct snakeinfo {
-    int x[ROW], y[COL];
-    int len, current_direction;
-} snake;
-const int shift[4][2] = {{-1, 0},
-                         {0,  1},
-                         {1,  0},
-                         {0,  -1}};
-int flag, apple[2];
+int flag;
+short apple[2];
 char map[ROW * COL];
 SOCKET ClientSocket[2];
 
-void init_map() {
-    for (int i = 0; i < ROW; i++) {
-        for (int j = 0; j < COL; j++) {
-            if (i == 0 || i == ROW - 1 || j == 0 || j == COL - 1) {
-                map[i * COL + j] = '#';
-            } else {
-                map[i * COL + j] = ' ';
-            }
-        }
-    }
-}
-
-void init_apple() {
-    apple[0] = 0;
-    apple[1] = 0;
-    while (map[apple[0] * COL + apple[1]] != ' ') {
-        apple[0] = rand() % ROW;
-        apple[1] = rand() % COL;
-    }
-    map[apple[0] * COL + apple[1]] = '$';
-}
-
-void init_snake(snake *s) {
-    s->current_direction = -10;
-    s->len = 1;
-    s->x[0] = 0;
-    s->y[0] = 0;
-    while (map[s->x[0] * COL + s->y[0]] != ' ') {
-        s->x[0] = rand() % ROW;
-        s->y[0] = rand() % COL;
-    }
-    map[s->x[0] * COL + s->y[0]] = '*';
-}
-
-void process_input(snake *s, char input, int *d) {
-    *d = -1;
-    switch (input) {
-        case 'w':
-            *d = 0;
-            break;
-        case 'd':
-            *d = 1;
-            break;
-        case 's':
-            *d = 2;
-            break;
-        case 'a':
-            *d = 3;
-            break;
-        case 'q':
-            *d = 4;
-            break;
-        default:
-            break;
-    }
-    if (*d == -1 || abs(*d - s->current_direction) == 2) {
-        return;
-    }
-    s->current_direction = *d;
-}
-
-void move_snake(snake *s, int *d) {
-    int tmpx = s->x[s->len - 1], tmpy = s->y[s->len - 1];
-    for (int i = s->len; i > 0; i--) {
-        s->x[i] = s->x[i - 1];
-        s->y[i] = s->y[i - 1];
-    }
-    s->x[0] += shift[s->current_direction][0];
-    s->y[0] += shift[s->current_direction][1];
-    if (map[s->x[0] * COL + s->y[0]] == '#' || map[s->x[0] * COL + s->y[0]] == '*') {
-        *d = 5;
-        return;
-    }
-    map[tmpx * COL + tmpy] = ' ';
-    if (s->x[0] == apple[0] && s->y[0] == apple[1]) {
-        s->len++;
-        init_apple();
-    }
-    map[s->x[0] * COL + s->y[0]] = '*';
-}
-
 DWORD WINAPI player1thread() {
     snake player1;
-    init_snake(&player1);
+    init_snake(map, &player1);
     int direction1 = -1;
     char recvdata1;
     while (1) {
@@ -119,20 +27,19 @@ DWORD WINAPI player1thread() {
             break;
         }
         if (player1.current_direction != -10) {
-            move_snake(&player1, &direction1);
+            move_snake(map, apple, &player1, &direction1);
         }
         if (direction1 == 5) {
             //player dead
             break;
         }
-        Sleep(200);
     }
     return 0;
 }
 
 DWORD WINAPI player2thread() {
     snake player2;
-    init_snake(&player2);
+    init_snake(map, &player2);
     int direction2 = -1;
     char recvdata2;
     while (1) {
@@ -145,13 +52,12 @@ DWORD WINAPI player2thread() {
             break;
         }
         if (player2.current_direction != -10) {
-            move_snake(&player2, &direction2);
+            move_snake(map, apple, &player2, &direction2);
         }
         if (direction2 == 5) {
             //player dead
             break;
         }
-        Sleep(200);
     }
     return 0;
 }
@@ -162,7 +68,7 @@ DWORD WINAPI sendthread() {
             //send data to clients
             send(ClientSocket[i], map, sizeof(map), 0);
         }
-        Sleep(200);
+        Sleep(TIME_WAIT);
     }
     map[0] = 'r';
     for (int i = 0; i < 2; i++) {
@@ -205,8 +111,8 @@ int main() {
         while (1) {
             printf("starting a new game...\n");
             flag = 1;
-            init_map();
-            init_apple();
+            init_map(map);
+            init_apple(map, apple);
 
             //create a thread for sending data
             CreateThread(NULL, 0, sendthread, 0, 0, NULL);
@@ -226,7 +132,7 @@ int main() {
             //wait for player threads shutdown
             WaitForMultipleObjects(2, playerthreads, TRUE, INFINITE);
             flag = 0;
-            Sleep(200);
+            Sleep(TIME_WAIT);
         }
 
         //clean up

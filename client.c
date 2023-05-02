@@ -2,33 +2,17 @@
 // Created by V on 2023/4/25.
 //
 #include <stdio.h>
-#include <stdlib.h>
-#include <winsock2.h>
-#include <windows.h>
 #include <conio.h>
 #include <time.h>
+#include <winsock2.h>
+#include <windows.h>
+#include "share.h"
 
-#define DEFAULT_PORT 19998
-
-#define ROW 25
-#define COL 50
-
-typedef struct snakeinfo {
-    int x[ROW], y[COL];
-    int len, current_direction;
-} snake;
-const int shift[4][2] = {{-1, 0},
-                         {0,  1},
-                         {1,  0},
-                         {0,  -1}};
-int apple[2];
-char map[ROW * COL];
+short apple[2];
+char map[ROW * COL], map_old[ROW * COL];
 
 void cursor_hide() {
-    CONSOLE_CURSOR_INFO curInfo = {
-            .dwSize = 1,
-            .bVisible = FALSE
-    };
+    CONSOLE_CURSOR_INFO curInfo = {.dwSize = 1, .bVisible = FALSE};
     SetConsoleCursorInfo(GetStdHandle(STD_OUTPUT_HANDLE), &curInfo);
 }
 
@@ -37,99 +21,16 @@ void cursor_go(short x, short y) {
     SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), pos);
 }
 
-void init_map() {
+void render_map() {
     for (short i = 0; i < ROW; i++) {
         for (short j = 0; j < COL; j++) {
-            if (i == 0 || i == ROW - 1 || j == 0 || j == COL - 1) {
-                map[i * COL + j] = '#';
+            if (map[i * COL + j] != map_old[i * COL + j]) {
                 cursor_go(j, i);
                 printf("%c", map[i * COL + j]);
-            } else {
-                map[i * COL + j] = ' ';
             }
         }
     }
-}
-
-void init_apple() {
-    apple[0] = 0;
-    apple[1] = 0;
-    while (map[apple[0] * COL + apple[1]] != ' ') {
-        apple[0] = rand() % ROW;
-        apple[1] = rand() % COL;
-    }
-    map[apple[0] * COL + apple[1]] = '$';
-}
-
-void init_snake(snake *s) {
-    s->current_direction = -10;
-    s->len = 1;
-    s->x[0] = 0;
-    s->y[0] = 0;
-    while (map[s->x[0] * COL + s->y[0]] != ' ') {
-        s->x[0] = rand() % ROW;
-        s->y[0] = rand() % COL;
-    }
-    map[s->x[0] * COL + s->y[0]] = '*';
-}
-
-void render_map() {
-    for (short i = 1; i < ROW - 1; i++) {
-        for (short j = 1; j < COL - 1; j++) {
-            cursor_go(j, i);
-            printf("%c", map[i * COL + j]);
-        }
-    }
-}
-
-void process_input(snake *s, int *d) {
-    *d = -1;
-    if (_kbhit()) {
-        char tmp = (char) getch();
-        switch (tmp) {
-            case 'w':
-                *d = 0;
-                break;
-            case 'd':
-                *d = 1;
-                break;
-            case 's':
-                *d = 2;
-                break;
-            case 'a':
-                *d = 3;
-                break;
-            case 'q':
-                *d = 4;
-                break;
-            default:
-                break;
-        }
-    }
-    if (*d == -1 || abs(*d - s->current_direction) == 2) {
-        return;
-    }
-    s->current_direction = *d;
-}
-
-void move_snake(snake *s, int *d) {
-    int tmpx = s->x[s->len - 1], tmpy = s->y[s->len - 1];
-    for (int i = s->len; i > 0; i--) {
-        s->x[i] = s->x[i - 1];
-        s->y[i] = s->y[i - 1];
-    }
-    s->x[0] += shift[s->current_direction][0];
-    s->y[0] += shift[s->current_direction][1];
-    if (map[s->x[0] * COL + s->y[0]] == '#' || map[s->x[0] * COL + s->y[0]] == '*') {
-        *d = 5;
-        return;
-    }
-    map[tmpx * COL + tmpy] = ' ';
-    if (s->x[0] == apple[0] && s->y[0] == apple[1]) {
-        s->len++;
-        init_apple();
-    }
-    map[s->x[0] * COL + s->y[0]] = '*';
+    memcpy(map_old, map, sizeof(map));
 }
 
 int init_ui() {
@@ -148,18 +49,24 @@ void singleplayer() {
     cursor_hide();
     snake player;
     int direction = -1;
-    init_map();
-    init_apple();
-    init_snake(&player);
+    char input;
+    init_map(map);
+    init_apple(map, apple);
+    init_snake(map, &player);
+    memset(map_old, ' ', sizeof(map_old));
     render_map();
     while (1) {
-        process_input(&player, &direction);
+        input = 'k';
+        if (_kbhit()) {
+            input = (char) getch();
+        }
+        process_input(&player, input, &direction);
         if (direction == 4) {
             //player quit
             break;
         }
         if (player.current_direction != -10) {
-            move_snake(&player, &direction);
+            move_snake(map, apple, &player, &direction);
         }
         if (direction == 5) {
             //player dead
@@ -169,7 +76,7 @@ void singleplayer() {
             break;
         }
         render_map();
-        Sleep(200);
+        Sleep(TIME_WAIT);
     }
 }
 
@@ -182,7 +89,7 @@ void multiplayer() {
 
     //creat a socket to connect
     SOCKET ConnectSocket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
-    char targetip[20], senddata[1];
+    char targetip[20];
     while (1) {
         printf("enter the server ip address: ");
         scanf("%s", targetip);
@@ -209,7 +116,7 @@ void multiplayer() {
 
     //connected
     cursor_hide();
-    init_map();
+    char senddata;
     while (1) {
         //receive data from server
         recv(ConnectSocket, map, ROW * COL, 0);
@@ -223,12 +130,11 @@ void multiplayer() {
         render_map();
 
         //keep sending data to server
+        senddata = 'k';
         if (_kbhit()) {
-            senddata[0] = (char) getch();
-        } else {
-            senddata[0] = 'k';
+            senddata = (char) getch();
         }
-        send(ConnectSocket, senddata, 1, 0);
+        send(ConnectSocket, &senddata, 1, 0);
     }
 
     //clean up
@@ -238,6 +144,7 @@ void multiplayer() {
 
 int main() {
     srand((unsigned) time(NULL));
+
     while (1) {
         int input = init_ui();
         if (input == 1) {
