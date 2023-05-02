@@ -32,7 +32,11 @@ typedef struct snakeinfo {
 } snake;
 
 void init_map(char *);
+
 void init_apple(char *, short *);
+
 void init_snake(char *, snake *, char);
+
 void process_input(snake *, char, int *);
-void move_snake(char *, short *, snake*, char, int *);
+
+void move_snake(char *, short *, snake *, char, int *);

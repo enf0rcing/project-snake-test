@@ -78,7 +78,8 @@ void move_snake(char *map, short *apple, snake *s, char symbol, int *d) {
     }
     s->x[0] += shift[s->current_direction][0];
     s->y[0] += shift[s->current_direction][1];
-    if (map[s->x[0] * COL + s->y[0]] == WALL || map[s->x[0] * COL + s->y[0]] == SNAKE_1 || map[s->x[0] * COL + s->y[0]] == SNAKE_2) {
+    if (map[s->x[0] * COL + s->y[0]] == WALL || map[s->x[0] * COL + s->y[0]] == SNAKE_1 ||
+        map[s->x[0] * COL + s->y[0]] == SNAKE_2) {
         *d = DEAD_DIRECTION;
         return;
     }
