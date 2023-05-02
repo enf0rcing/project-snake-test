@@ -14,22 +14,22 @@ SOCKET ClientSocket[2];
 
 DWORD WINAPI player1thread() {
     snake player1;
-    init_snake(map, &player1);
-    int direction1 = -1;
+    init_snake(map, &player1, SNAKE_1);
+    int direction1 = DEFAULT_DIRECTION;
     char recvdata1;
     while (1) {
         //receive data from client
         recv(ClientSocket[0], &recvdata1, 1, 0);
 
         process_input(&player1, recvdata1, &direction1);
-        if (direction1 == 4) {
+        if (direction1 == QUIT_DIRECTION) {
             //player quit
             break;
         }
-        if (player1.current_direction != -10) {
-            move_snake(map, apple, &player1, &direction1);
+        if (player1.current_direction != INIT_DIRECTION) {
+            move_snake(map, apple, &player1, SNAKE_1, &direction1);
         }
-        if (direction1 == 5) {
+        if (direction1 == DEAD_DIRECTION) {
             //player dead
             break;
         }
@@ -39,22 +39,22 @@ DWORD WINAPI player1thread() {
 
 DWORD WINAPI player2thread() {
     snake player2;
-    init_snake(map, &player2);
-    int direction2 = -1;
+    init_snake(map, &player2, SNAKE_2);
+    int direction2 = DEFAULT_DIRECTION;
     char recvdata2;
     while (1) {
         //receive data from client
         recv(ClientSocket[1], &recvdata2, 1, 0);
 
         process_input(&player2, recvdata2, &direction2);
-        if (direction2 == 4) {
+        if (direction2 == QUIT_DIRECTION) {
             //player quit
             break;
         }
-        if (player2.current_direction != -10) {
-            move_snake(map, apple, &player2, &direction2);
+        if (player2.current_direction != INIT_DIRECTION) {
+            move_snake(map, apple, &player2, SNAKE_2, &direction2);
         }
-        if (direction2 == 5) {
+        if (direction2 == DEAD_DIRECTION) {
             //player dead
             break;
         }
@@ -70,7 +70,7 @@ DWORD WINAPI sendthread() {
         }
         Sleep(TIME_WAIT);
     }
-    map[0] = 'r';
+    map[0] = RESTART;
     for (int i = 0; i < 2; i++) {
         //send data to clients
         send(ClientSocket[i], map, sizeof(map), 0);

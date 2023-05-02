@@ -46,29 +46,31 @@ int init_ui() {
 
 void singleplayer() {
     system("cls");
+
     cursor_hide();
-    snake player;
-    int direction = -1;
-    char input;
     init_map(map);
     init_apple(map, apple);
-    init_snake(map, &player);
-    memset(map_old, ' ', sizeof(map_old));
+
+    snake player;
+    init_snake(map, &player, SNAKE_1);
+    int direction = DEFAULT_DIRECTION;
+    char input;
+    memset(map_old, AIR, sizeof(map_old));
     render_map();
     while (1) {
-        input = 'k';
+        input = DEFAULT_INPUT;
         if (_kbhit()) {
             input = (char) getch();
         }
         process_input(&player, input, &direction);
-        if (direction == 4) {
+        if (direction == QUIT_DIRECTION) {
             //player quit
             break;
         }
-        if (player.current_direction != -10) {
-            move_snake(map, apple, &player, &direction);
+        if (player.current_direction != INIT_DIRECTION) {
+            move_snake(map, apple, &player, SNAKE_1, &direction);
         }
-        if (direction == 5) {
+        if (direction == DEAD_DIRECTION) {
             //player dead
             cursor_go(0, ROW);
             printf("game over\n");
@@ -81,8 +83,6 @@ void singleplayer() {
 }
 
 void multiplayer() {
-    system("cls");
-
     //init winsock
     WSADATA wsaData;
     WSAStartup(MAKEWORD(2, 2), &wsaData);
@@ -115,13 +115,15 @@ void multiplayer() {
     }
 
     //connected
+    system("cls");
     cursor_hide();
     char senddata;
+    memset(map_old, AIR, sizeof(map_old));
     while (1) {
         //receive data from server
         recv(ConnectSocket, map, ROW * COL, 0);
 
-        if (map[0] == 'r') {
+        if (map[0] == RESTART) {
             cursor_go(0, ROW);
             printf("game over\n");
             system("pause");
@@ -130,7 +132,7 @@ void multiplayer() {
         render_map();
 
         //keep sending data to server
-        senddata = 'k';
+        senddata = DEFAULT_INPUT;
         if (_kbhit()) {
             senddata = (char) getch();
         }
