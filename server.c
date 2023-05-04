@@ -8,8 +8,7 @@
 #include "share.h"
 
 char map[ROW * COL];
-short apple[2];
-int direction[2];
+int apple[2];
 snake player[2];
 SOCKET ClientSocket[2];
 
@@ -32,21 +31,21 @@ DWORD WINAPI send_thread(LPVOID lpParameter) {
 
 DWORD WINAPI player_thread(LPVOID lpParameter) {
     int *id = (int *) lpParameter;
-    init_snake(map, &player[*id], symbol[*id]);
+    init_snake(map, playersymbol[*id], &player[*id]);
     char recvdata;
     while (1) {
         //receive data from client
         recv(ClientSocket[*id], &recvdata, 1, 0);
 
-        process_input(&player[*id], recvdata, &direction[*id]);
-        if (direction[*id] == QUIT_DIRECTION) {
+        process_input(recvdata, &player[*id]);
+        if (player[*id].newdirection == QUIT_DIRECTION) {
             //player quit
             break;
         }
-        if (player[*id].current_direction != INIT_DIRECTION) {
-            move_snake(map, apple, &player[*id], symbol[*id], &direction[*id]);
+        if (player[*id].direction != INIT_DIRECTION) {
+            move_snake(map, apple, &player[*id]);
         }
-        if (direction[*id] == DEAD_DIRECTION) {
+        if (player[*id].newdirection == DEAD_DIRECTION) {
             //player dead
             break;
         }

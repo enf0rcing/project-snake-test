@@ -4,7 +4,7 @@
 #include <stdlib.h>
 #include "share.h"
 
-const char symbol[2] = {"*o"};
+const char playersymbol[2] = {"*o"};
 const int shift[4][2] = {{-1, 0},
                          {0,  1},
                          {1,  0},
@@ -22,7 +22,7 @@ void init_map(char *map) {
     }
 }
 
-void init_apple(char *map, short *apple) {
+void init_apple(char *map, int *apple) {
     apple[0] = 0;
     apple[1] = 0;
     while (map[apple[0] * COL + apple[1]] != AIR) {
@@ -32,62 +32,64 @@ void init_apple(char *map, short *apple) {
     map[apple[0] * COL + apple[1]] = APPLE;
 }
 
-void init_snake(char *map, snake *s, char snake_symbol) {
-    s->current_direction = INIT_DIRECTION;
-    s->len = 1;
-    s->x[0] = 0;
-    s->y[0] = 0;
-    while (map[s->x[0] * COL + s->y[0]] != AIR) {
-        s->x[0] = rand() % ROW;
-        s->y[0] = rand() % COL;
+void init_snake(char *map, char ps, snake *p) {
+    p->x[0] = 0;
+    p->y[0] = 0;
+    p->len = 1;
+    p->direction = INIT_DIRECTION;
+    p->newdirection = DEFAULT_DIRECTION;
+    p->symbol = ps;
+    while (map[p->x[0] * COL + p->y[0]] != AIR) {
+        p->x[0] = rand() % ROW;
+        p->y[0] = rand() % COL;
     }
-    map[s->x[0] * COL + s->y[0]] = snake_symbol;
+    map[p->x[0] * COL + p->y[0]] = p->symbol;
 }
 
-void process_input(snake *s, char input, int *d) {
+void process_input(char input, snake *p) {
     switch (input) {
         case 'w':
-            *d = 0;
+            p->newdirection = 0;
             break;
         case 'd':
-            *d = 1;
+            p->newdirection = 1;
             break;
         case 's':
-            *d = 2;
+            p->newdirection = 2;
             break;
         case 'a':
-            *d = 3;
+            p->newdirection = 3;
             break;
         case QUIT:
-            *d = QUIT_DIRECTION;
+            p->newdirection = QUIT_DIRECTION;
             break;
         default:
-            *d = DEFAULT_DIRECTION;
+            p->newdirection = DEFAULT_DIRECTION;
             break;
     }
-    if (*d == DEFAULT_DIRECTION || abs(*d - s->current_direction) == 2) {
+    if (p->newdirection == DEFAULT_DIRECTION || abs(p->newdirection - p->direction) == 2) {
         return;
     }
-    s->current_direction = *d;
+    p->direction = p->newdirection;
 }
 
-void move_snake(char *map, short *apple, snake *s, char snake_symbol, int *d) {
-    int tmpx = s->x[s->len - 1], tmpy = s->y[s->len - 1];
-    for (int i = s->len; i > 0; i--) {
-        s->x[i] = s->x[i - 1];
-        s->y[i] = s->y[i - 1];
+void move_snake(char *map, int *apple, snake *p) {
+    int tmpx = p->x[p->len - 1], tmpy = p->y[p->len - 1];
+    for (int i = p->len; i > 0; i--) {
+        p->x[i] = p->x[i - 1];
+        p->y[i] = p->y[i - 1];
     }
-    s->x[0] += shift[s->current_direction][0];
-    s->y[0] += shift[s->current_direction][1];
-    if (map[s->x[0] * COL + s->y[0]] == symbol[0] || map[s->x[0] * COL + s->y[0]] == symbol[1] ||
-        map[s->x[0] * COL + s->y[0]] == WALL) {
-        *d = DEAD_DIRECTION;
+    p->x[0] += shift[p->direction][0];
+    p->y[0] += shift[p->direction][1];
+    if (map[p->x[0] * COL + p->y[0]] == playersymbol[0] || map[p->x[0] * COL + p->y[0]] == playersymbol[1] ||
+        map[p->x[0] * COL + p->y[0]] == WALL) {
+        p->newdirection = DEAD_DIRECTION;
         return;
     }
     map[tmpx * COL + tmpy] = AIR;
-    if (s->x[0] == apple[0] && s->y[0] == apple[1]) {
-        s->len++;
+    if (p->x[0] == apple[0] && p->y[0] == apple[1]) {
+        p->len++;
         init_apple(map, apple);
     }
-    map[s->x[0] * COL + s->y[0]] = snake_symbol;
+    map[p->x[0] * COL + p->y[0]] = p->symbol;
 }

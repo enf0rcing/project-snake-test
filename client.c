@@ -8,7 +8,6 @@
 #include <windows.h>
 #include "share.h"
 
-short apple[2];
 char map[ROW * COL], map_old[ROW * COL];
 
 void cursor_show(int flag) {
@@ -52,13 +51,13 @@ void print_info(int flag) {
 void single_player() {
     system("cls");
     srand((unsigned) time(NULL));
+    int apple[2];
 
     init_map(map);
     init_apple(map, apple);
 
     snake player;
-    init_snake(map, &player, symbol[0]);
-    int direction = DEFAULT_DIRECTION;
+    init_snake(map, playersymbol[0], &player);
     char input;
     memset(map_old, AIR, sizeof(map_old));
     render_map();
@@ -68,17 +67,17 @@ void single_player() {
         if (_kbhit()) {
             input = (char) getch();
         }
-        process_input(&player, input, &direction);
-        if (direction == QUIT_DIRECTION) {
+        process_input(input, &player);
+        if (player.newdirection == QUIT_DIRECTION) {
             //player quit
             cursor_go(0, ROW);
             system("pause");
             break;
         }
-        if (player.current_direction != INIT_DIRECTION) {
-            move_snake(map, apple, &player, symbol[0], &direction);
+        if (player.direction != INIT_DIRECTION) {
+            move_snake(map, apple, &player);
         }
-        if (direction == DEAD_DIRECTION) {
+        if (player.newdirection == DEAD_DIRECTION) {
             //player dead
             cursor_go(0, ROW);
             printf("game over\n");
@@ -147,9 +146,9 @@ void multi_player() {
         int score[2] = {0};
         for (int i = 0; i < ROW; i++) {
             for (int j = 0; j < COL; j++) {
-                if (map[i * COL + j] == symbol[0]) {
+                if (map[i * COL + j] == playersymbol[0]) {
                     score[0]++;
-                } else if (map[i * COL + j] == symbol[1]) {
+                } else if (map[i * COL + j] == playersymbol[1]) {
                     score[1]++;
                 }
             }
