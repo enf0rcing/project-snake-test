@@ -11,8 +11,8 @@
 char map[ROW * COL], map_old[ROW * COL];
 
 void cursor_show(int flag) {
-    CONSOLE_CURSOR_INFO curInfo = {.dwSize = 1, .bVisible = flag};
-    SetConsoleCursorInfo(GetStdHandle(STD_OUTPUT_HANDLE), &curInfo);
+    CONSOLE_CURSOR_INFO cursorInfo = {.dwSize = 1, .bVisible = flag};
+    SetConsoleCursorInfo(GetStdHandle(STD_OUTPUT_HANDLE), &cursorInfo);
 }
 
 void cursor_go(short x, short y) {
@@ -57,7 +57,7 @@ void single_player() {
     init_apple(map, apple);
 
     snake player;
-    init_snake(map, playersymbol[0], &player);
+    init_snake(map, playerSymbol[0], &player);
     char input;
     memset(map_old, AIR, sizeof(map_old));
     render_map();
@@ -68,7 +68,7 @@ void single_player() {
             input = (char) getch();
         }
         process_input(input, &player);
-        if (player.newdirection == QUIT_DIRECTION) {
+        if (player.newDirection == QUIT_DIRECTION) {
             //player quit
             cursor_go(0, ROW);
             system("pause");
@@ -77,7 +77,7 @@ void single_player() {
         if (player.direction != INIT_DIRECTION) {
             move_snake(map, apple, &player);
         }
-        if (player.newdirection == DEAD_DIRECTION) {
+        if (player.newDirection == DEAD_DIRECTION) {
             //player dead
             cursor_go(0, ROW);
             printf("game over\n");
@@ -95,17 +95,17 @@ void multi_player() {
     system("cls");
     cursor_show(1);
 
-    //init winsock
+    //init WinSock
     WSADATA wsaData;
     WSAStartup(MAKEWORD(2, 2), &wsaData);
 
     //creat a socket to connect
     SOCKET ConnectSocket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
-    char targetip[20];
+    char targetIp[20];
     while (1) {
         printf("enter the server ip address: ");
-        scanf("%s", targetip);
-        if (inet_addr(targetip) == INADDR_NONE) {
+        scanf("%s", targetIp);
+        if (inet_addr(targetIp) == INADDR_NONE) {
             printf("invalid ip address, try again.\n");
         } else {
             break;
@@ -114,7 +114,7 @@ void multi_player() {
     struct sockaddr_in hints;
     memset(&hints, 0, sizeof(hints));
     hints.sin_family = AF_INET;
-    hints.sin_addr.s_addr = inet_addr(targetip);
+    hints.sin_addr.s_addr = inet_addr(targetIp);
     hints.sin_port = htons(DEFAULT_PORT);
 
     //connect to the server
@@ -129,7 +129,7 @@ void multi_player() {
     system("cls");
     cursor_show(0);
 
-    char senddata;
+    char sendData;
     memset(map_old, AIR, sizeof(map_old));
     print_info(1);
     while (1) {
@@ -146,9 +146,9 @@ void multi_player() {
         int score[2] = {0};
         for (int i = 0; i < ROW; i++) {
             for (int j = 0; j < COL; j++) {
-                if (map[i * COL + j] == playersymbol[0]) {
+                if (map[i * COL + j] == playerSymbol[0]) {
                     score[0]++;
-                } else if (map[i * COL + j] == playersymbol[1]) {
+                } else if (map[i * COL + j] == playerSymbol[1]) {
                     score[1]++;
                 }
             }
@@ -159,11 +159,11 @@ void multi_player() {
         printf("%d ", score[1] - 1);
 
         //keep sending data to server
-        senddata = DEFAULT_INPUT;
+        sendData = DEFAULT_INPUT;
         if (_kbhit()) {
-            senddata = (char) getch();
+            sendData = (char) getch();
         }
-        send(ConnectSocket, &senddata, 1, 0);
+        send(ConnectSocket, &sendData, 1, 0);
     }
     //clean up
     closesocket(ConnectSocket);

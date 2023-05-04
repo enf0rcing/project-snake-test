@@ -22,13 +22,13 @@
 #define QUIT_DIRECTION 4
 #define DEAD_DIRECTION 5
 
-typedef struct snakeinfo {
+typedef struct snakeInfo {
     int x[ROW * COL], y[ROW * COL];
-    int len, direction, newdirection;
+    int len, direction, newDirection;
     char symbol;
 } snake;
 
-extern const char playersymbol[2];
+extern const char playerSymbol[2];
 
 void init_map(char *);
 
