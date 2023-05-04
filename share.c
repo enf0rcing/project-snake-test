@@ -33,7 +33,7 @@ void init_apple(char *map, int *apple) {
 void init_snake(char *map, char ps, snake *p) {
     p->len = 1;
     p->direction = INIT_DIRECTION;
-    p->newDirection = DEFAULT_DIRECTION;
+    p->directionNew = DEFAULT_DIRECTION;
     p->symbol = ps;
     do {
         p->x[0] = rand() % ROW;
@@ -45,28 +45,28 @@ void init_snake(char *map, char ps, snake *p) {
 void process_input(char input, snake *p) {
     switch (input) {
         case 'w':
-            p->newDirection = 0;
+            p->directionNew = 0;
             break;
         case 'd':
-            p->newDirection = 1;
+            p->directionNew = 1;
             break;
         case 's':
-            p->newDirection = 2;
+            p->directionNew = 2;
             break;
         case 'a':
-            p->newDirection = 3;
+            p->directionNew = 3;
             break;
         case QUIT:
-            p->newDirection = QUIT_DIRECTION;
+            p->directionNew = QUIT_DIRECTION;
             break;
         default:
-            p->newDirection = DEFAULT_DIRECTION;
+            p->directionNew = DEFAULT_DIRECTION;
             break;
     }
-    if (p->newDirection == DEFAULT_DIRECTION || abs(p->newDirection - p->direction) == 2) {
+    if (p->directionNew == DEFAULT_DIRECTION || abs(p->directionNew - p->direction) == 2) {
         return;
     }
-    p->direction = p->newDirection;
+    p->direction = p->directionNew;
 }
 
 void move_snake(char *map, int *apple, snake *p) {
@@ -79,7 +79,7 @@ void move_snake(char *map, int *apple, snake *p) {
     p->y[0] += shift[p->direction][1];
     if (map[p->x[0] * COL + p->y[0]] == playerSymbol[0] || map[p->x[0] * COL + p->y[0]] == playerSymbol[1] ||
         map[p->x[0] * COL + p->y[0]] == WALL) {
-        p->newDirection = DEAD_DIRECTION;
+        p->directionNew = DEAD_DIRECTION;
         return;
     }
     map[tmpX * COL + tmpY] = AIR;

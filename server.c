@@ -38,14 +38,14 @@ DWORD WINAPI player_thread(LPVOID lpParameter) {
         recv(ClientSocket[*id], &recvData, 1, 0);
 
         process_input(recvData, &player[*id]);
-        if (player[*id].newDirection == QUIT_DIRECTION) {
+        if (player[*id].directionNew == QUIT_DIRECTION) {
             //player quit
             break;
         }
         if (player[*id].direction != INIT_DIRECTION) {
             move_snake(map, apple, &player[*id]);
         }
-        if (player[*id].newDirection == DEAD_DIRECTION) {
+        if (player[*id].directionNew == DEAD_DIRECTION) {
             //player dead
             break;
         }

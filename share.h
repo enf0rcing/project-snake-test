@@ -24,7 +24,7 @@
 
 typedef struct snakeInfo {
     int x[ROW * COL], y[ROW * COL];
-    int len, direction, newDirection;
+    int len, direction, directionNew;
     char symbol;
 } snake;
 

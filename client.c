@@ -63,7 +63,7 @@ void single_player() {
             input = (char) getch();
         }
         process_input(input, &player);
-        if (player.newDirection == QUIT_DIRECTION) {
+        if (player.directionNew == QUIT_DIRECTION) {
             //player quit
             cursor_go(0, ROW);
             system("pause");
@@ -72,7 +72,7 @@ void single_player() {
         if (player.direction != INIT_DIRECTION) {
             move_snake(map, apple, &player);
         }
-        if (player.newDirection == DEAD_DIRECTION) {
+        if (player.directionNew == DEAD_DIRECTION) {
             //player dead
             cursor_go(0, ROW);
             printf("game over\n");
@@ -181,18 +181,16 @@ int init_ui() {
         if (input == 'w') {
             cursor_go(0, loc);
             printf("  ");
-            if (loc == 1) {
+            loc--;
+            if (loc == 0) {
                 loc = 3;
-            } else {
-                loc--;
             }
         } else if (input == 's') {
             cursor_go(0, loc);
             printf("  ");
-            if (loc == 3) {
+            loc++;
+            if (loc == 4) {
                 loc = 1;
-            } else {
-                loc++;
             }
         } else if (input == 13) {
             switch (loc) {
