@@ -133,14 +133,13 @@ int main() {
             WaitForMultipleObjects(2, playerthreads, TRUE, INFINITE);
             flag = 0;
             Sleep(TIME_WAIT);
-        }
-
-        //clean up
-        for (int i = 0; i < 2; i++) {
-            closesocket(ClientSocket[i]);
+            CloseHandle(sendthread);
         }
     }
     //clean up
+    for (int i = 0; i < 2; i++) {
+        closesocket(ClientSocket[i]);
+    }
     closesocket(ListenSocket);
     WSACleanup();
 
