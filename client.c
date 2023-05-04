@@ -185,15 +185,11 @@ int init_ui() {
     printf("   singleplayer\n");
     printf("   multiplayer\n");
     printf("   quit\n");
-    char input;
     short loc = 1;
     while (1) {
         cursor_go(0, loc);
         printf("->");
-        input = DEFAULT_INPUT;
-        if (_kbhit()) {
-            input = (char) getch();
-        }
+        char input = (char) getch();
         if (input == 'w') {
             cursor_go(0, loc);
             printf("  ");
