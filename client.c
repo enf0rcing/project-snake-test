@@ -49,7 +49,7 @@ void print_info(int flag) {
     }
 }
 
-void singleplayer() {
+void single_player() {
     system("cls");
     srand((unsigned) time(NULL));
 
@@ -92,7 +92,7 @@ void singleplayer() {
     }
 }
 
-void multiplayer() {
+void multi_player() {
     system("cls");
     cursor_show(1);
 
@@ -119,8 +119,7 @@ void multiplayer() {
     hints.sin_port = htons(DEFAULT_PORT);
 
     //connect to the server
-    int iResult = connect(ConnectSocket, (SOCKADDR *) &hints, sizeof(hints));
-    if (iResult == SOCKET_ERROR) {
+    if (connect(ConnectSocket, (SOCKADDR *) &hints, sizeof(hints)) == SOCKET_ERROR) {
         closesocket(ConnectSocket);
         printf("failed to connect to the server.\n");
         system("pause");
@@ -167,7 +166,6 @@ void multiplayer() {
         }
         send(ConnectSocket, &senddata, 1, 0);
     }
-
     //clean up
     closesocket(ConnectSocket);
     WSACleanup();
@@ -178,8 +176,8 @@ int init_ui() {
 
     cursor_show(0);
     printf("choose a game mode:\n");
-    printf("   singleplayer\n");
-    printf("   multiplayer\n");
+    printf("   single_player\n");
+    printf("   multi_player\n");
     printf("   quit\n");
     short loc = 1;
     while (1) {
@@ -205,10 +203,10 @@ int init_ui() {
         } else if (input == 13) {
             switch (loc) {
                 case 1:
-                    singleplayer();
+                    single_player();
                     return 1;
                 case 2:
-                    multiplayer();
+                    multi_player();
                     return 1;
                 case 3:
                     return 0;

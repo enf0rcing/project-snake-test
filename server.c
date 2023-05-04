@@ -9,11 +9,28 @@
 
 char map[ROW * COL];
 short apple[2];
-int flag, direction[2];
+int direction[2];
 snake player[2];
 SOCKET ClientSocket[2];
 
-DWORD WINAPI playerthread(LPVOID lpParameter) {
+DWORD WINAPI send_thread(LPVOID lpParameter) {
+    int *flag = (int *) lpParameter;
+    while (*flag) {
+        for (int i = 0; i < 2; i++) {
+            //send data to clients
+            send(ClientSocket[i], map, sizeof(map), 0);
+        }
+        Sleep(TIME_WAIT);
+    }
+    map[0] = RESTART;
+    for (int i = 0; i < 2; i++) {
+        //send data to clients
+        send(ClientSocket[i], map, sizeof(map), 0);
+    }
+    return 0;
+}
+
+DWORD WINAPI player_thread(LPVOID lpParameter) {
     int *id = (int *) lpParameter;
     init_snake(map, &player[*id], symbol[*id]);
     char recvdata;
@@ -33,22 +50,6 @@ DWORD WINAPI playerthread(LPVOID lpParameter) {
             //player dead
             break;
         }
-    }
-    return 0;
-}
-
-DWORD WINAPI sendthread() {
-    while (flag) {
-        for (int i = 0; i < 2; i++) {
-            //send data to clients
-            send(ClientSocket[i], map, sizeof(map), 0);
-        }
-        Sleep(TIME_WAIT);
-    }
-    map[0] = RESTART;
-    for (int i = 0; i < 2; i++) {
-        //send data to clients
-        send(ClientSocket[i], map, sizeof(map), 0);
     }
     return 0;
 }
@@ -81,24 +82,24 @@ int main() {
         HANDLE playerthreads[2];
 
         //start game
-        int playerid[2] = {0, 1};
         while (1) {
             printf("starting a new game...\n");
-            flag = 1;
+            int flag = 1;
+            int playerid[2] = {0, 1};
             srand((unsigned) time(NULL));
 
             init_map(map);
             init_apple(map, apple);
 
             //create a thread for sending data
-            CreateThread(NULL, 0, sendthread, 0, 0, NULL);
+            CreateThread(NULL, 0, send_thread, &flag, 0, NULL);
 
             //create player threads
             for (int i = 0; i < 2; i++) {
                 printf("Waiting for player%d...\n", i + 1);
                 ClientSocket[i] = accept(ListenSocket, (LPSOCKADDR) &remoteaddr, &remoteaddrlen);
                 printf("connected: %s\n", inet_ntoa(remoteaddr.sin_addr));
-                playerthreads[i] = CreateThread(NULL, 0, playerthread, &playerid[i], 0, NULL);
+                playerthreads[i] = CreateThread(NULL, 0, player_thread, &playerid[i], 0, NULL);
             }
 
             //wait for player threads shutdown
