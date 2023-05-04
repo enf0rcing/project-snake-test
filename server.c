@@ -133,7 +133,6 @@ int main() {
             WaitForMultipleObjects(2, playerthreads, TRUE, INFINITE);
             flag = 0;
             Sleep(TIME_WAIT);
-            CloseHandle(sendthread);
         }
     }
     //clean up
