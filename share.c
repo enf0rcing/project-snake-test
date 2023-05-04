@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include "share.h"
 
+const char symbol[2] = {"*o"};
 const int shift[4][2] = {{-1, 0},
                          {0,  1},
                          {1,  0},
@@ -31,7 +32,7 @@ void init_apple(char *map, short *apple) {
     map[apple[0] * COL + apple[1]] = APPLE;
 }
 
-void init_snake(char *map, snake *s, char symbol) {
+void init_snake(char *map, snake *s, char snake_symbol) {
     s->current_direction = INIT_DIRECTION;
     s->len = 1;
     s->x[0] = 0;
@@ -40,7 +41,7 @@ void init_snake(char *map, snake *s, char symbol) {
         s->x[0] = rand() % ROW;
         s->y[0] = rand() % COL;
     }
-    map[s->x[0] * COL + s->y[0]] = symbol;
+    map[s->x[0] * COL + s->y[0]] = snake_symbol;
 }
 
 void process_input(snake *s, char input, int *d) {
@@ -70,7 +71,7 @@ void process_input(snake *s, char input, int *d) {
     s->current_direction = *d;
 }
 
-void move_snake(char *map, short *apple, snake *s, char symbol, int *d) {
+void move_snake(char *map, short *apple, snake *s, char snake_symbol, int *d) {
     int tmpx = s->x[s->len - 1], tmpy = s->y[s->len - 1];
     for (int i = s->len; i > 0; i--) {
         s->x[i] = s->x[i - 1];
@@ -78,8 +79,8 @@ void move_snake(char *map, short *apple, snake *s, char symbol, int *d) {
     }
     s->x[0] += shift[s->current_direction][0];
     s->y[0] += shift[s->current_direction][1];
-    if (map[s->x[0] * COL + s->y[0]] == WALL || map[s->x[0] * COL + s->y[0]] == SNAKE_1 ||
-        map[s->x[0] * COL + s->y[0]] == SNAKE_2) {
+    if (map[s->x[0] * COL + s->y[0]] == symbol[0] || map[s->x[0] * COL + s->y[0]] == symbol[1] ||
+        map[s->x[0] * COL + s->y[0]] == WALL) {
         *d = DEAD_DIRECTION;
         return;
     }
@@ -88,5 +89,5 @@ void move_snake(char *map, short *apple, snake *s, char symbol, int *d) {
         s->len++;
         init_apple(map, apple);
     }
-    map[s->x[0] * COL + s->y[0]] = symbol;
+    map[s->x[0] * COL + s->y[0]] = snake_symbol;
 }

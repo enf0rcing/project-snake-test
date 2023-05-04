@@ -4,9 +4,7 @@
 #ifndef SNAKE_TEST_SHARE_H
 #define SNAKE_TEST_SHARE_H
 
-#endif //SNAKE_TEST_SHARE_H
-
-#define DEFAULT_PORT 19998
+#define DEFAULT_PORT 23333
 #define ROW 25
 #define COL 50
 #define TIME_WAIT 200
@@ -14,8 +12,6 @@
 #define WALL '#'
 #define AIR ' '
 #define APPLE '$'
-#define SNAKE_1 '*'
-#define SNAKE_2 'o'
 
 #define QUIT 'q'
 #define RESTART 'r'
@@ -31,6 +27,8 @@ typedef struct snakeinfo {
     int len, current_direction;
 } snake;
 
+extern const char symbol[2];
+
 void init_map(char *);
 
 void init_apple(char *, short *);
@@ -40,3 +38,6 @@ void init_snake(char *, snake *, char);
 void process_input(snake *, char, int *);
 
 void move_snake(char *, short *, snake *, char, int *);
+
+#endif //SNAKE_TEST_SHARE_H
+

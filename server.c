@@ -7,54 +7,29 @@
 #include <windows.h>
 #include "share.h"
 
-int flag;
-short apple[2];
 char map[ROW * COL];
+short apple[2];
+int flag, direction[2];
+snake player[2];
 SOCKET ClientSocket[2];
 
-DWORD WINAPI player1thread() {
-    snake player1;
-    init_snake(map, &player1, SNAKE_1);
-    int direction1 = DEFAULT_DIRECTION;
-    char recvdata1;
+DWORD WINAPI playerthread(LPVOID lpParameter) {
+    int *id = (int *) lpParameter;
+    init_snake(map, &player[*id], symbol[*id]);
+    char recvdata;
     while (1) {
         //receive data from client
-        recv(ClientSocket[0], &recvdata1, 1, 0);
+        recv(ClientSocket[*id], &recvdata, 1, 0);
 
-        process_input(&player1, recvdata1, &direction1);
-        if (direction1 == QUIT_DIRECTION) {
+        process_input(&player[*id], recvdata, &direction[*id]);
+        if (direction[*id] == QUIT_DIRECTION) {
             //player quit
             break;
         }
-        if (player1.current_direction != INIT_DIRECTION) {
-            move_snake(map, apple, &player1, SNAKE_1, &direction1);
+        if (player[*id].current_direction != INIT_DIRECTION) {
+            move_snake(map, apple, &player[*id], symbol[*id], &direction[*id]);
         }
-        if (direction1 == DEAD_DIRECTION) {
-            //player dead
-            break;
-        }
-    }
-    return 0;
-}
-
-DWORD WINAPI player2thread() {
-    snake player2;
-    init_snake(map, &player2, SNAKE_2);
-    int direction2 = DEFAULT_DIRECTION;
-    char recvdata2;
-    while (1) {
-        //receive data from client
-        recv(ClientSocket[1], &recvdata2, 1, 0);
-
-        process_input(&player2, recvdata2, &direction2);
-        if (direction2 == QUIT_DIRECTION) {
-            //player quit
-            break;
-        }
-        if (player2.current_direction != INIT_DIRECTION) {
-            move_snake(map, apple, &player2, SNAKE_2, &direction2);
-        }
-        if (direction2 == DEAD_DIRECTION) {
+        if (direction[*id] == DEAD_DIRECTION) {
             //player dead
             break;
         }
@@ -79,8 +54,6 @@ DWORD WINAPI sendthread() {
 }
 
 int main() {
-    srand((unsigned) time(NULL));
-
     //init winsock
     WSADATA wsaData;
     WSAStartup(MAKEWORD(2, 2), &wsaData);
@@ -108,26 +81,25 @@ int main() {
         HANDLE playerthreads[2];
 
         //start game
+        int playerid[2] = {0, 1};
         while (1) {
             printf("starting a new game...\n");
             flag = 1;
+            srand((unsigned) time(NULL));
+
             init_map(map);
             init_apple(map, apple);
 
             //create a thread for sending data
             CreateThread(NULL, 0, sendthread, 0, 0, NULL);
 
-            //if connected, create player1 thread
-            printf("Waiting for player1...\n");
-            ClientSocket[0] = accept(ListenSocket, (LPSOCKADDR) &remoteaddr, &remoteaddrlen);
-            printf("connected: %s\n", inet_ntoa(remoteaddr.sin_addr));
-            playerthreads[0] = CreateThread(NULL, 0, player1thread, 0, 0, NULL);
-
-            //if connected, create player2 thread
-            printf("Waiting for player2...\n");
-            ClientSocket[1] = accept(ListenSocket, (LPSOCKADDR) &remoteaddr, &remoteaddrlen);
-            printf("connected: %s\n", inet_ntoa(remoteaddr.sin_addr));
-            playerthreads[1] = CreateThread(NULL, 0, player2thread, 0, 0, NULL);
+            //create player threads
+            for (int i = 0; i < 2; i++) {
+                printf("Waiting for player%d...\n", i + 1);
+                ClientSocket[i] = accept(ListenSocket, (LPSOCKADDR) &remoteaddr, &remoteaddrlen);
+                printf("connected: %s\n", inet_ntoa(remoteaddr.sin_addr));
+                playerthreads[i] = CreateThread(NULL, 0, playerthread, &playerid[i], 0, NULL);
+            }
 
             //wait for player threads shutdown
             WaitForMultipleObjects(2, playerthreads, TRUE, INFINITE);

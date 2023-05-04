@@ -51,12 +51,13 @@ void print_info(int flag) {
 
 void singleplayer() {
     system("cls");
+    srand((unsigned) time(NULL));
 
     init_map(map);
     init_apple(map, apple);
 
     snake player;
-    init_snake(map, &player, SNAKE_1);
+    init_snake(map, &player, symbol[0]);
     int direction = DEFAULT_DIRECTION;
     char input;
     memset(map_old, AIR, sizeof(map_old));
@@ -75,7 +76,7 @@ void singleplayer() {
             break;
         }
         if (player.current_direction != INIT_DIRECTION) {
-            move_snake(map, apple, &player, SNAKE_1, &direction);
+            move_snake(map, apple, &player, symbol[0], &direction);
         }
         if (direction == DEAD_DIRECTION) {
             //player dead
@@ -147,22 +148,17 @@ void multiplayer() {
         int score[2] = {0};
         for (int i = 0; i < ROW; i++) {
             for (int j = 0; j < COL; j++) {
-                if (map[i * COL + j] == SNAKE_1) {
+                if (map[i * COL + j] == symbol[0]) {
                     score[0]++;
-                } else if (map[i * COL + j] == SNAKE_2) {
+                } else if (map[i * COL + j] == symbol[1]) {
                     score[1]++;
                 }
             }
         }
         cursor_go(COL + 16, 3);
-        printf("%d", score[0] - 1);
-        if (score[1]) {
-            cursor_go(COL + 16, 4);
-            printf("%d", score[1] - 1);
-        } else {
-            cursor_go(COL + 16, 4);
-            printf("unconnected");
-        }
+        printf("%d ", score[0] - 1);
+        cursor_go(COL + 16, 4);
+        printf("%d ", score[1] - 1);
 
         //keep sending data to server
         senddata = DEFAULT_INPUT;
@@ -224,8 +220,6 @@ int init_ui() {
 }
 
 int main() {
-    srand((unsigned) time(NULL));
-
     while (init_ui()) {
     }
     return 0;
