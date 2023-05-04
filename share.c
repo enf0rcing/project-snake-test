@@ -23,26 +23,22 @@ void init_map(char *map) {
 }
 
 void init_apple(char *map, int *apple) {
-    apple[0] = 0;
-    apple[1] = 0;
-    while (map[apple[0] * COL + apple[1]] != AIR) {
+    do {
         apple[0] = rand() % ROW;
         apple[1] = rand() % COL;
-    }
+    } while (map[apple[0] * COL + apple[1]] != AIR);
     map[apple[0] * COL + apple[1]] = APPLE;
 }
 
 void init_snake(char *map, char ps, snake *p) {
-    p->x[0] = 0;
-    p->y[0] = 0;
     p->len = 1;
     p->direction = INIT_DIRECTION;
     p->newdirection = DEFAULT_DIRECTION;
     p->symbol = ps;
-    while (map[p->x[0] * COL + p->y[0]] != AIR) {
+    do {
         p->x[0] = rand() % ROW;
         p->y[0] = rand() % COL;
-    }
+    } while (map[p->x[0] * COL + p->y[0]] != AIR);
     map[p->x[0] * COL + p->y[0]] = p->symbol;
 }
 
