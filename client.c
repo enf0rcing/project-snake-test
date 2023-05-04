@@ -37,14 +37,9 @@ void print_info(int flag) {
     printf("control: \"wasd\"");
     cursor_go(COL + 1, 1);
     printf("quit: \"q\"");
-    if (flag) {
-        cursor_go(COL + 1, 3);
-        printf("player1 score: ");
-        cursor_go(COL + 1, 4);
-        printf("player2 score: ");
-    } else {
-        cursor_go(COL + 1, 3);
-        printf("player score: ");
+    for (int i = 0; i < flag; i++) {
+        cursor_go(COL + 1, i + 3);
+        printf("player%d score: ", i + 1);
     }
 }
 
@@ -61,7 +56,7 @@ void single_player() {
     char input;
     memset(mapOld, AIR, sizeof(mapOld));
     render_map();
-    print_info(0);
+    print_info(1);
     while (1) {
         input = DEFAULT_INPUT;
         if (_kbhit()) {
@@ -131,7 +126,7 @@ void multi_player() {
 
     char sendData;
     memset(mapOld, AIR, sizeof(mapOld));
-    print_info(1);
+    print_info(2);
     while (1) {
         //receive data from server
         recv(ConnectSocket, map, ROW * COL, 0);
