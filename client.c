@@ -8,7 +8,7 @@
 #include <windows.h>
 #include "share.h"
 
-char map[ROW * COL], map_old[ROW * COL];
+char map[ROW * COL], mapOld[ROW * COL];
 
 void cursor_show(int flag) {
     CONSOLE_CURSOR_INFO cursorInfo = {.dwSize = 1, .bVisible = flag};
@@ -23,13 +23,13 @@ void cursor_go(short x, short y) {
 void render_map() {
     for (short i = 0; i < ROW; i++) {
         for (short j = 0; j < COL; j++) {
-            if (map[i * COL + j] != map_old[i * COL + j]) {
+            if (map[i * COL + j] != mapOld[i * COL + j]) {
                 cursor_go(j, i);
                 printf("%c", map[i * COL + j]);
             }
         }
     }
-    memcpy(map_old, map, sizeof(map));
+    memcpy(mapOld, map, sizeof(map));
 }
 
 void print_info(int flag) {
@@ -59,7 +59,7 @@ void single_player() {
     snake player;
     init_snake(map, playerSymbol[0], &player);
     char input;
-    memset(map_old, AIR, sizeof(map_old));
+    memset(mapOld, AIR, sizeof(mapOld));
     render_map();
     print_info(0);
     while (1) {
@@ -130,7 +130,7 @@ void multi_player() {
     cursor_show(0);
 
     char sendData;
-    memset(map_old, AIR, sizeof(map_old));
+    memset(mapOld, AIR, sizeof(mapOld));
     print_info(1);
     while (1) {
         //receive data from server
