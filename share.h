@@ -26,7 +26,7 @@ typedef struct snakeInfo {
     int x[ROW * COL], y[ROW * COL];
     int len, direction, directionNew;
     char symbol;
-} snake;
+} Snake;
 
 extern const char playerSymbol[2];
 
@@ -34,11 +34,11 @@ void init_map(char *);
 
 void init_apple(char *, int *);
 
-void init_snake(char *, char, snake *);
+void init_snake(char *, char, Snake *);
 
-void process_input(char, snake *);
+void process_input(char, Snake *);
 
-void move_snake(char *, int *, snake *);
+void move_snake(char *, int *, Snake *);
 
 #endif //SNAKE_TEST_SHARE_H
 

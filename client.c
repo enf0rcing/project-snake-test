@@ -14,14 +14,14 @@ void cursor_show(int flag) {
     SetConsoleCursorInfo(GetStdHandle(STD_OUTPUT_HANDLE), &cursorInfo);
 }
 
-void cursor_go(short x, short y) {
-    COORD pos = {.X = x, .Y = y};
+void cursor_go(int x, int y) {
+    COORD pos = {.X = (short) x, .Y = (short) y};
     SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), pos);
 }
 
 void render_map() {
-    for (short i = 0; i < ROW; i++) {
-        for (short j = 0; j < COL; j++) {
+    for (int i = 0; i < ROW; i += 1) {
+        for (int j = 0; j < COL; j += 1) {
             if (map[i * COL + j] != mapOld[i * COL + j]) {
                 cursor_go(j, i);
                 printf("%c", map[i * COL + j]);
@@ -33,24 +33,24 @@ void render_map() {
 
 void print_info(int flag) {
     cursor_go(COL + 1, 0);
-    printf("control: \"wasd\"");
+    printf("Control: \"wasd\"");
     cursor_go(COL + 1, 1);
-    printf("quit: \"q\"");
-    for (int i = 0; i < flag; i++) {
+    printf("Quit: \"q\"");
+    for (int i = 0; i < flag; i += 1) {
         cursor_go(COL + 1, i + 3);
-        printf("player%d score: ", i + 1);
+        printf("Player%d score: ", i + 1);
     }
 }
 
 void single_player() {
     system("cls");
-    srand(time(NULL));
+    srand(time(0));
     int apple[2];
 
     init_map(map);
     init_apple(map, apple);
 
-    snake player;
+    Snake player;
     init_snake(map, playerSymbol[0], &player);
     char input;
     memset(mapOld, AIR, sizeof(mapOld));
@@ -58,7 +58,7 @@ void single_player() {
     print_info(1);
     while (1) {
         input = DEFAULT_INPUT;
-        if (_kbhit()) {
+        if (kbhit()) {
             input = (char) getch();
         }
         process_input(input, &player);
@@ -74,7 +74,7 @@ void single_player() {
         if (player.directionNew == DEAD_DIRECTION) {
             //player dead
             cursor_go(0, ROW);
-            printf("game over\n");
+            printf("Game over\n");
             system("pause");
             break;
         }
@@ -93,14 +93,14 @@ void multi_player() {
     WSADATA wsaData;
     WSAStartup(MAKEWORD(2, 2), &wsaData);
 
-    //creat a socket to connect
+    //create a socket to connect
     SOCKET ConnectSocket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
     char targetIp[20];
     while (1) {
-        printf("enter the server ip address: ");
+        printf("Enter the server ip address: ");
         scanf("%s", targetIp);
         if (inet_addr(targetIp) == INADDR_NONE) {
-            printf("invalid ip address, try again.\n");
+            printf("Invalid ip address, try again.\n");
         } else {
             break;
         }
@@ -115,7 +115,7 @@ void multi_player() {
     if (connect(ConnectSocket, (SOCKADDR *) &hints, sizeof(hints)) == SOCKET_ERROR) {
         closesocket(ConnectSocket);
         WSACleanup();
-        printf("failed to connect to the server.\n");
+        printf("Failed to connect to the server.\n");
         system("pause");
         return;
     }
@@ -133,18 +133,18 @@ void multi_player() {
 
         if (map[0] == RESTART) {
             cursor_go(0, ROW);
-            printf("game over\n");
+            printf("Game over\n");
             system("pause");
             break;
         }
         render_map();
         int score[2] = {0};
-        for (int i = 0; i < ROW; i++) {
-            for (int j = 0; j < COL; j++) {
+        for (int i = 0; i < ROW; i += 1) {
+            for (int j = 0; j < COL; j += 1) {
                 if (map[i * COL + j] == playerSymbol[0]) {
-                    score[0]++;
+                    score[0] += 1;
                 } else if (map[i * COL + j] == playerSymbol[1]) {
-                    score[1]++;
+                    score[1] += 1;
                 }
             }
         }
@@ -155,7 +155,7 @@ void multi_player() {
 
         //keep sending data to server
         sendData = DEFAULT_INPUT;
-        if (_kbhit()) {
+        if (kbhit()) {
             sendData = (char) getch();
         }
         send(ConnectSocket, &sendData, 1, 0);
@@ -169,42 +169,39 @@ int init_ui() {
     system("cls");
     cursor_show(0);
 
-    printf("choose a game mode:\n");
-    printf("   single_player\n");
-    printf("   multi_player\n");
-    printf("   quit\n");
-    short loc = 1;
+    printf("Choose a game mode:\n");
+    printf("   Single player\n");
+    printf("   Multiplayer\n");
+    printf("   Quit\n");
+    int choose = 1;
     while (1) {
-        cursor_go(0, loc);
+        cursor_go(0, choose);
         printf("->");
         char input = (char) getch();
         if (input == 'w') {
-            cursor_go(0, loc);
+            cursor_go(0, choose);
             printf("  ");
-            loc--;
-            if (loc == 0) {
-                loc = 3;
+            choose -= 1;
+            if (choose == 0) {
+                choose = 3;
             }
         } else if (input == 's') {
-            cursor_go(0, loc);
+            cursor_go(0, choose);
             printf("  ");
-            loc++;
-            if (loc == 4) {
-                loc = 1;
+            choose += 1;
+            if (choose == 4) {
+                choose = 1;
             }
         } else if (input == 13) {
-            switch (loc) {
-                case 1:
-                    single_player();
-                    return 1;
-                case 2:
-                    multi_player();
-                    return 1;
-                case 3:
-                    return 0;
-                default:
-                    break;
+            if (choose == 1) {
+                single_player();
+                return 1;
             }
+            if (choose == 2) {
+                multi_player();
+                return 1;
+            }
+            return 0;
         }
     }
 }

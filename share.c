@@ -11,8 +11,8 @@ const int shift[4][2] = {{-1, 0},
                          {0,  -1}};
 
 void init_map(char *map) {
-    for (int i = 0; i < ROW; i++) {
-        for (int j = 0; j < COL; j++) {
+    for (int i = 0; i < ROW; i += 1) {
+        for (int j = 0; j < COL; j += 1) {
             if (i == 0 || i == ROW - 1 || j == 0 || j == COL - 1) {
                 map[i * COL + j] = WALL;
             } else {
@@ -30,7 +30,7 @@ void init_apple(char *map, int *apple) {
     map[apple[0] * COL + apple[1]] = APPLE;
 }
 
-void init_snake(char *map, char ps, snake *p) {
+void init_snake(char *map, char ps, Snake *p) {
     p->len = 1;
     p->direction = INIT_DIRECTION;
     p->directionNew = DEFAULT_DIRECTION;
@@ -42,7 +42,7 @@ void init_snake(char *map, char ps, snake *p) {
     map[p->x[0] * COL + p->y[0]] = p->symbol;
 }
 
-void process_input(char input, snake *p) {
+void process_input(char input, Snake *p) {
     switch (input) {
         case 'w':
             p->directionNew = 0;
@@ -69,9 +69,9 @@ void process_input(char input, snake *p) {
     p->direction = p->directionNew;
 }
 
-void move_snake(char *map, int *apple, snake *p) {
+void move_snake(char *map, int *apple, Snake *p) {
     int tmpX = p->x[p->len - 1], tmpY = p->y[p->len - 1];
-    for (int i = p->len; i > 0; i--) {
+    for (int i = p->len; i > 0; i -= 1) {
         p->x[i] = p->x[i - 1];
         p->y[i] = p->y[i - 1];
     }
@@ -84,7 +84,7 @@ void move_snake(char *map, int *apple, snake *p) {
     }
     map[tmpX * COL + tmpY] = AIR;
     if (p->x[0] == apple[0] && p->y[0] == apple[1]) {
-        p->len++;
+        p->len += 1;
         init_apple(map, apple);
     }
     map[p->x[0] * COL + p->y[0]] = p->symbol;
