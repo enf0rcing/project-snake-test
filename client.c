@@ -19,13 +19,19 @@ void cursor_go(int x, int y) {
     SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), pos);
 }
 
-void render_map() {
+void render_map(int *s1, int *s2) {
     for (int i = 0; i < ROW; i += 1) {
         for (int j = 0; j < COL; j += 1) {
             if (map[i * COL + j] != mapOld[i * COL + j]) {
                 cursor_go(j, i);
                 printf("%c", map[i * COL + j]);
                 mapOld[i * COL + j] = map[i * COL + j];
+            }
+            if (s1 && map[i * COL + j] == playerSymbol[0]) {
+                *s1 += 1;
+            }
+            if (s2 && map[i * COL + j] == playerSymbol[1]) {
+                *s2 += 1;
             }
         }
     }
@@ -54,7 +60,7 @@ void single_player() {
     init_snake(map, playerSymbol[0], &player);
     char input;
     memset(mapOld, AIR, sizeof(mapOld));
-    render_map();
+    render_map(0, 0);
     print_info(1);
     while (1) {
         input = DEFAULT_INPUT;
@@ -78,7 +84,7 @@ void single_player() {
             system("pause");
             break;
         }
-        render_map();
+        render_map(0, 0);
         cursor_go(COL + 16, 3);
         printf("%d", player.len - 1);
         Sleep(TIME_WAIT);
@@ -137,17 +143,8 @@ void multi_player() {
             system("pause");
             break;
         }
-        render_map();
         int score[2] = {0};
-        for (int i = 0; i < ROW; i += 1) {
-            for (int j = 0; j < COL; j += 1) {
-                if (map[i * COL + j] == playerSymbol[0]) {
-                    score[0] += 1;
-                } else if (map[i * COL + j] == playerSymbol[1]) {
-                    score[1] += 1;
-                }
-            }
-        }
+        render_map(&score[0], &score[1]);
         cursor_go(COL + 16, 3);
         printf("%d ", score[0] - 1);
         cursor_go(COL + 16, 4);
