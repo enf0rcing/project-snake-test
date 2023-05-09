@@ -25,10 +25,10 @@ void render_map() {
             if (map[i * COL + j] != mapOld[i * COL + j]) {
                 cursor_go(j, i);
                 printf("%c", map[i * COL + j]);
+                mapOld[i * COL + j] = map[i * COL + j];
             }
         }
     }
-    memcpy(mapOld, map, sizeof(map));
 }
 
 void print_info(int flag) {
