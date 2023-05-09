@@ -4,7 +4,6 @@
 #include <stdio.h>
 #include <time.h>
 #include <winsock2.h>
-#include <windows.h>
 #include "share.h"
 
 char map[ROW * COL];
@@ -85,7 +84,7 @@ int main() {
             printf("starting a new game...\n");
             int flag = 1;
             int playerId[2] = {0, 1};
-            srand((unsigned) time(NULL));
+            srand(time(0));
 
             init_map(map);
             init_apple(map, apple);

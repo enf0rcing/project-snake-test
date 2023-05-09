@@ -5,7 +5,6 @@
 #include <conio.h>
 #include <time.h>
 #include <winsock2.h>
-#include <windows.h>
 #include "share.h"
 
 char map[ROW * COL], mapOld[ROW * COL];
@@ -16,7 +15,7 @@ void cursor_show(int flag) {
 }
 
 void cursor_go(short x, short y) {
-    COORD pos = {x, y};
+    COORD pos = {.X = x, .Y = y};
     SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), pos);
 }
 
@@ -45,7 +44,7 @@ void print_info(int flag) {
 
 void single_player() {
     system("cls");
-    srand((unsigned) time(NULL));
+    srand(time(NULL));
     int apple[2];
 
     init_map(map);
@@ -80,7 +79,7 @@ void single_player() {
             break;
         }
         render_map();
-        cursor_go(COL + 15, 3);
+        cursor_go(COL + 16, 3);
         printf("%d", player.len - 1);
         Sleep(TIME_WAIT);
     }
@@ -115,6 +114,7 @@ void multi_player() {
     //connect to the server
     if (connect(ConnectSocket, (SOCKADDR *) &hints, sizeof(hints)) == SOCKET_ERROR) {
         closesocket(ConnectSocket);
+        WSACleanup();
         printf("failed to connect to the server.\n");
         system("pause");
         return;
@@ -167,8 +167,8 @@ void multi_player() {
 
 int init_ui() {
     system("cls");
-
     cursor_show(0);
+
     printf("choose a game mode:\n");
     printf("   single_player\n");
     printf("   multi_player\n");
