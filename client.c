@@ -7,7 +7,7 @@
 #include <winsock2.h>
 #include "share.h"
 
-char map[ROW * COL], mapOld[ROW * COL];
+char map[ROW * COL + 1], mapOld[ROW * COL];
 
 void cursor_show(int flag) {
     CONSOLE_CURSOR_INFO cursorInfo = {.dwSize = 1, .bVisible = flag};
@@ -19,7 +19,8 @@ void cursor_go(int x, int y) {
     SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), pos);
 }
 
-void render_map(int *s1, int *s2) {
+void render_map() {
+    int score[2] = {0};
     for (int i = 0; i < ROW; i += 1) {
         for (int j = 0; j < COL; j += 1) {
             if (map[i * COL + j] != mapOld[i * COL + j]) {
@@ -27,68 +28,66 @@ void render_map(int *s1, int *s2) {
                 printf("%c", map[i * COL + j]);
                 mapOld[i * COL + j] = map[i * COL + j];
             }
-            if (s1 && map[i * COL + j] == playerSymbol[0]) {
-                *s1 += 1;
+            for (int k = 0; k < 2; k += 1) {
+                if (map[i * COL + j] == playerSymbol[k]) {
+                    score[k] += 1;
+                }
             }
-            if (s2 && map[i * COL + j] == playerSymbol[1]) {
-                *s2 += 1;
-            }
+        }
+    }
+    for (int i = 0; i < 2; i += 1) {
+        if (score[i]) {
+            cursor_go(COL + 16, 3 + i);
+            printf("%d", score[i] - 1);
         }
     }
 }
 
 void print_info(int flag) {
-    cursor_go(COL + 1, 0);
-    printf("Control: \"wasd\"");
-    cursor_go(COL + 1, 1);
-    printf("Quit: \"q\"");
-    for (int i = 0; i < flag; i += 1) {
-        cursor_go(COL + 1, i + 3);
-        printf("Player%d score: ", i + 1);
+    if (flag == 0) {
+        cursor_go(0, ROW);
+        printf("Game over.\n");
+        printf("Press any key to continue . . .\n");
+    } else {
+        cursor_go(COL + 1, 0);
+        printf("Control: \"wasd\"");
+        cursor_go(COL + 1, 1);
+        printf("Quit: \"q\"");
+        for (int i = 0; i < flag; i += 1) {
+            cursor_go(COL + 1, i + 3);
+            printf("Player%d score: ", i + 1);
+        }
     }
 }
 
 void single_player() {
     system("cls");
     srand(time(0));
-    int apple[2];
 
     init_map(map);
+    int apple[2];
     init_apple(map, apple);
 
     Snake player;
     init_snake(map, playerSymbol[0], &player);
-    char input;
+
     memset(mapOld, AIR, sizeof(mapOld));
-    render_map(0, 0);
+    render_map();
     print_info(1);
-    while (1) {
-        input = DEFAULT_INPUT;
+
+    //start game
+    while (player.status != DEAD) {
+        char input = 0;
         if (kbhit()) {
             input = (char) getch();
         }
         process_input(input, &player);
-        if (player.directionNew == QUIT_DIRECTION) {
-            //player quit
-            cursor_go(0, ROW);
-            system("pause");
-            break;
-        }
-        if (player.direction != INIT_DIRECTION) {
-            move_snake(map, apple, &player);
-        }
-        if (player.directionNew == DEAD_DIRECTION) {
-            //player dead
-            cursor_go(0, ROW);
-            printf("Game over\n");
-            system("pause");
-            break;
-        }
-        render_map(0, 0);
-        cursor_go(COL + 16, 3);
-        printf("%d", player.len - 1);
-        Sleep(TIME_WAIT);
+        move_snake(map, apple, &player);
+        render_map();
+        Sleep(200);
     }
+    print_info(0);
+    getch();
 }
 
 void multi_player() {
@@ -130,33 +129,25 @@ void multi_player() {
     system("cls");
     cursor_show(0);
 
-    char sendData;
     memset(mapOld, AIR, sizeof(mapOld));
     print_info(2);
     while (1) {
         //receive data from server
-        recv(ConnectSocket, map, ROW * COL, 0);
-
-        if (map[0] == RESTART) {
-            cursor_go(0, ROW);
-            printf("Game over\n");
-            system("pause");
+        recv(ConnectSocket, map, sizeof(map), 0);
+        if (!map[ROW * COL]) {
             break;
         }
-        int score[2] = {0};
-        render_map(&score[0], &score[1]);
-        cursor_go(COL + 16, 3);
-        printf("%d ", score[0] - 1);
-        cursor_go(COL + 16, 4);
-        printf("%d ", score[1] - 1);
+        render_map();
 
-        //keep sending data to server
-        sendData = DEFAULT_INPUT;
+        //send data to server
         if (kbhit()) {
-            sendData = (char) getch();
+            char sendData = (char) getch();
+            send(ConnectSocket, &sendData, 1, 0);
         }
-        send(ConnectSocket, &sendData, 1, 0);
     }
+    print_info(0);
+    char sendData = (char) getch();
+    send(ConnectSocket, &sendData, 1, 0);
     //clean up
     closesocket(ConnectSocket);
     WSACleanup();
@@ -167,9 +158,9 @@ int init_ui() {
     cursor_show(0);
 
     printf("Choose a game mode:\n");
-    printf("   Single player\n");
-    printf("   Multiplayer\n");
-    printf("   Quit\n");
+    printf("   Single player.\n");
+    printf("   Multiplayer.\n");
+    printf("   Quit.\n");
     int choose = 1;
     while (1) {
         cursor_go(0, choose);

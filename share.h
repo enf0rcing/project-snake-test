@@ -7,24 +7,17 @@
 #define DEFAULT_PORT 23333
 #define ROW 25
 #define COL 50
-#define TIME_WAIT 200
 
 #define WALL '#'
 #define AIR ' '
 #define APPLE '$'
 
-#define QUIT 'q'
-#define RESTART 'r'
-#define DEFAULT_INPUT 'k'
-
-#define INIT_DIRECTION (-10)
-#define DEFAULT_DIRECTION (-1)
-#define QUIT_DIRECTION 4
-#define DEAD_DIRECTION 5
+#define INIT (-10)
+#define DEAD 10
 
 typedef struct snakeInfo {
     int x[ROW * COL], y[ROW * COL];
-    int len, direction, directionNew;
+    int len, status, newStatus;
     char symbol;
 } Snake;
 

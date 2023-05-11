@@ -20,6 +20,7 @@ void init_map(char *map) {
             }
         }
     }
+    map[ROW * COL] = 1;
 }
 
 void init_apple(char *map, int *apple) {
@@ -30,11 +31,11 @@ void init_apple(char *map, int *apple) {
     map[apple[0] * COL + apple[1]] = APPLE;
 }
 
-void init_snake(char *map, char ps, Snake *p) {
+void init_snake(char *map, char symbol, Snake *p) {
     p->len = 1;
-    p->direction = INIT_DIRECTION;
-    p->directionNew = DEFAULT_DIRECTION;
-    p->symbol = ps;
+    p->status = INIT;
+    p->newStatus = 0;
+    p->symbol = symbol;
     do {
         p->x[0] = rand() % ROW;
         p->y[0] = rand() % COL;
@@ -45,47 +46,50 @@ void init_snake(char *map, char ps, Snake *p) {
 void process_input(char input, Snake *p) {
     switch (input) {
         case 'w':
-            p->directionNew = 0;
+            p->newStatus = 0;
             break;
         case 'd':
-            p->directionNew = 1;
+            p->newStatus = 1;
             break;
         case 's':
-            p->directionNew = 2;
+            p->newStatus = 2;
             break;
         case 'a':
-            p->directionNew = 3;
+            p->newStatus = 3;
             break;
-        case QUIT:
-            p->directionNew = QUIT_DIRECTION;
+        case 'q':
+            p->newStatus = DEAD;
             break;
         default:
-            p->directionNew = DEFAULT_DIRECTION;
+            p->newStatus = -1;
             break;
     }
-    if (p->directionNew == DEFAULT_DIRECTION || abs(p->directionNew - p->direction) == 2) {
+    if (p->newStatus == -1 || abs(p->newStatus - p->status) == 2) {
         return;
     }
-    p->direction = p->directionNew;
+    p->status = p->newStatus;
 }
 
 void move_snake(char *map, int *apple, Snake *p) {
-    int tmpX = p->x[p->len - 1], tmpY = p->y[p->len - 1];
+    if (p->status == DEAD || p->status == INIT) {
+        return;
+    }
+    int newHeadX = p->x[0] + shift[p->status][0], newHeadY = p->y[0] + shift[p->status][1];
+    if (map[newHeadX * COL + newHeadY] == playerSymbol[0] || map[newHeadX * COL + newHeadY] == playerSymbol[1] ||
+        map[newHeadX * COL + newHeadY] == WALL) {
+        p->status = DEAD;
+        return;
+    }
+    if (newHeadX == apple[0] && newHeadY == apple[1]) {
+        p->len += 1;
+        init_apple(map, apple);
+    }
+    map[p->x[p->len - 1] * COL + p->y[p->len - 1]] = AIR;
     for (int i = p->len; i > 0; i -= 1) {
         p->x[i] = p->x[i - 1];
         p->y[i] = p->y[i - 1];
     }
-    p->x[0] += shift[p->direction][0];
-    p->y[0] += shift[p->direction][1];
-    if (map[p->x[0] * COL + p->y[0]] == playerSymbol[0] || map[p->x[0] * COL + p->y[0]] == playerSymbol[1] ||
-        map[p->x[0] * COL + p->y[0]] == WALL) {
-        p->directionNew = DEAD_DIRECTION;
-        return;
-    }
-    map[tmpX * COL + tmpY] = AIR;
-    if (p->x[0] == apple[0] && p->y[0] == apple[1]) {
-        p->len += 1;
-        init_apple(map, apple);
-    }
+    p->x[0] = newHeadX;
+    p->y[0] = newHeadY;
     map[p->x[0] * COL + p->y[0]] = p->symbol;
 }
