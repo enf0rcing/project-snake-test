@@ -77,7 +77,6 @@ int main() {
         //prepare to connections
         struct sockaddr_in remoteAddr;
         int remoteAddrLen = sizeof(remoteAddr);
-        HANDLE playerThread[2];
 
         //start game
         while (1) {
@@ -85,12 +84,13 @@ int main() {
             int flag = 1;
             int playerId[2] = {0, 1};
             srand(time(0));
+            HANDLE sendThread, playerThread[2];
 
             init_map(map);
             init_apple(map, apple);
 
             //create a thread for sending data
-            CreateThread(0, 0, send_thread, &flag, 0, 0);
+            sendThread = CreateThread(0, 0, send_thread, &flag, 0, 0);
 
             //create player threads
             for (int i = 0; i < 2; i += 1) {
@@ -102,8 +102,12 @@ int main() {
 
             //wait for player threads shutdown
             WaitForMultipleObjects(2, playerThread, 1, INFINITE);
+
+            //change shutdown signal of send thread
             flag = 0;
-            Sleep(TIME_WAIT);
+
+            //wait for send thread shutdown
+            WaitForSingleObject(sendThread, INFINITE);
         }
     }
     //clean up
