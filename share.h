@@ -8,20 +8,20 @@
 #define ROW 25
 #define COL 50
 
+#define INIT (-10)
+#define DEAD 10
+
 #define WALL '#'
 #define AIR ' '
 #define APPLE '$'
 
-#define INIT (-10)
-#define DEAD 10
+extern const char SnakeSymbol[2];
 
 typedef struct snakeInfo {
     int x[ROW * COL], y[ROW * COL];
     int len, status, newStatus;
     char symbol;
 } Snake;
-
-extern const char playerSymbol[2];
 
 void init_map(char *);
 

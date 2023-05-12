@@ -4,7 +4,7 @@
 #include <stdlib.h>
 #include "share.h"
 
-const char playerSymbol[2] = {"*o"};
+const char SnakeSymbol[2] = {"*o"};
 const int shift[4][2] = {{-1, 0},
                          {0,  1},
                          {1,  0},
@@ -75,7 +75,7 @@ void move_snake(char *map, int *apple, Snake *p) {
         return;
     }
     int newHeadX = p->x[0] + shift[p->status][0], newHeadY = p->y[0] + shift[p->status][1];
-    if (map[newHeadX * COL + newHeadY] == playerSymbol[0] || map[newHeadX * COL + newHeadY] == playerSymbol[1] ||
+    if (map[newHeadX * COL + newHeadY] == SnakeSymbol[0] || map[newHeadX * COL + newHeadY] == SnakeSymbol[1] ||
         map[newHeadX * COL + newHeadY] == WALL) {
         p->status = DEAD;
         return;

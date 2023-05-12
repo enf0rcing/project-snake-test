@@ -29,7 +29,6 @@ DWORD WINAPI send_thread() {
 
 DWORD WINAPI recv_thread(LPVOID lpParameter) {
     int *id = (int *) lpParameter;
-    init_snake(map, playerSymbol[*id], &player[*id]);
     while (player[0].status != DEAD || player[1].status != DEAD) {
         //receive data from client
         char recvData;
@@ -79,14 +78,17 @@ int main() {
         int remoteAddrLen = sizeof(remoteAddr);
 
         //start game
+        int playerId[2] = {0, 1};
+        HANDLE gameThread, sendThread, recvThreads[2];
         while (1) {
             printf("——————Starting a new game.——————\n");
             srand(time(0));
-            int playerId[2] = {0, 1};
-            HANDLE gameThread, sendThread, recvThreads[2];
 
             init_map(map);
             init_apple(map, apple);
+            for (int i = 0; i < 2; i += 1) {
+                init_snake(map, SnakeSymbol[i], &player[i]);
+            }
 
             //create send thread
             sendThread = CreateThread(0, 0, send_thread, 0, 0, 0);

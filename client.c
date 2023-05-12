@@ -29,7 +29,7 @@ void render_map() {
                 mapOld[i * COL + j] = map[i * COL + j];
             }
             for (int k = 0; k < 2; k += 1) {
-                if (map[i * COL + j] == playerSymbol[k]) {
+                if (map[i * COL + j] == SnakeSymbol[k]) {
                     score[k] += 1;
                 }
             }
@@ -69,7 +69,7 @@ void single_player() {
     init_apple(map, apple);
 
     Snake player;
-    init_snake(map, playerSymbol[0], &player);
+    init_snake(map, SnakeSymbol[0], &player);
 
     memset(mapOld, AIR, sizeof(mapOld));
     render_map();
