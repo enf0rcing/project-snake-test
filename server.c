@@ -79,7 +79,7 @@ int main() {
 
         //start game
         int playerId[2] = {0, 1};
-        HANDLE gameThread, sendThread, recvThreads[2];
+        HANDLE moveThread, sendThread, recvThreads[2];
         while (1) {
             printf("——————Starting a new game.——————\n");
             srand(time(0));
@@ -102,20 +102,24 @@ int main() {
             }
 
             //create move thread
-            gameThread = CreateThread(0, 0, move_thread, 0, 0, 0);
+            moveThread = CreateThread(0, 0, move_thread, 0, 0, 0);
 
             //wait for move thread shutdown
-            WaitForSingleObject(gameThread, INFINITE);
+            WaitForSingleObject(moveThread, INFINITE);
+            CloseHandle(moveThread);
 
             //wait for send thread shutdown
             WaitForSingleObject(sendThread, INFINITE);
+            CloseHandle(sendThread);
 
             printf("Game over.\n");
 
             //wait for recv threads shutdown
             WaitForMultipleObjects(2, recvThreads, 1, INFINITE);
+            for (int i = 0; i < 2; i += 1) {
+                CloseHandle(recvThreads[i]);
+            }
         }
-
     }
     //clean up
     for (int i = 0; i < 2; i += 1) {
