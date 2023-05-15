@@ -17,7 +17,7 @@ DWORD WINAPI send_thread() {
             //send data to clients
             send(ClientSocket[i], map, sizeof(map), 0);
         }
-        Sleep(100);
+        Sleep(200);
     }
     map[ROW * COL] = 0;
     for (int i = 0; i < 2; i += 1) {
@@ -79,10 +79,11 @@ int main() {
 
         //start game
         int playerId[2] = {0, 1};
-        HANDLE moveThread, sendThread, recvThreads[2];
+
         while (1) {
             printf("——————Starting a new game.——————\n");
             srand(time(0));
+            HANDLE moveThread, sendThread, recvThreads[2];
 
             init_map(map);
             init_apple(map, apple);
