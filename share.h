@@ -15,13 +15,13 @@
 #define AIR ' '
 #define APPLE '$'
 
-extern const char SnakeSymbol[2];
-
 typedef struct snakeInfo {
     int x[ROW * COL], y[ROW * COL];
     int len, status, newStatus;
     char symbol;
 } Snake;
+
+extern const char SnakeSymbol[2];
 
 void init_map(char *);
 

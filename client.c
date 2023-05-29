@@ -165,31 +165,35 @@ int init_ui() {
     while (1) {
         cursor_go(0, choose);
         printf("->");
+        cursor_go(0, choose);
         char input = (char) getch();
-        if (input == 'w') {
-            cursor_go(0, choose);
-            printf("  ");
-            choose -= 1;
-            if (choose == 0) {
-                choose = 3;
-            }
-        } else if (input == 's') {
-            cursor_go(0, choose);
-            printf("  ");
-            choose += 1;
-            if (choose == 4) {
-                choose = 1;
-            }
-        } else if (input == 13) {
-            if (choose == 1) {
-                single_player();
-                return 1;
-            }
-            if (choose == 2) {
-                multi_player();
-                return 1;
-            }
-            return 0;
+        switch (input) {
+            case 'w':
+                printf("  ");
+                choose -= 1;
+                if (choose == 0) {
+                    choose = 3;
+                }
+                break;
+            case 's':
+                printf("  ");
+                choose += 1;
+                if (choose == 4) {
+                    choose = 1;
+                }
+                break;
+            case 13:
+                if (choose == 1) {
+                    single_player();
+                    return 1;
+                }
+                if (choose == 2) {
+                    multi_player();
+                    return 1;
+                }
+                return 0;
+            default:
+                break;
         }
     }
 }

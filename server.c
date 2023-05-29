@@ -14,6 +14,11 @@ SOCKET ClientSocket[2];
 DWORD WINAPI send_thread() {
     while (player[0].status != DEAD || player[1].status != DEAD) {
         for (int i = 0; i < 2; i += 1) {
+            if (player[i].status != DEAD) {
+                move_snake(map, apple, &player[i]);
+            }
+        }
+        for (int i = 0; i < 2; i += 1) {
             //send data to clients
             send(ClientSocket[i], map, sizeof(map), 0);
         }
@@ -35,18 +40,6 @@ DWORD WINAPI recv_thread(LPVOID lpParameter) {
         recv(ClientSocket[*id], &recvData, 1, 0);
 
         process_input(recvData, &player[*id]);
-    }
-    return 0;
-}
-
-DWORD WINAPI move_thread() {
-    while (player[0].status != DEAD || player[1].status != DEAD) {
-        for (int i = 0; i < 2; i += 1) {
-            if (player[i].status != DEAD) {
-                move_snake(map, apple, &player[i]);
-            }
-        }
-        Sleep(200);
     }
     return 0;
 }
@@ -83,7 +76,7 @@ int main() {
         while (1) {
             printf("——————Starting a new game.——————\n");
             srand(time(0));
-            HANDLE moveThread, sendThread, recvThreads[2];
+            HANDLE sendThread, recvThreads[2];
 
             init_map(map);
             init_apple(map, apple);
@@ -101,13 +94,6 @@ int main() {
                 printf("%s Connected.\n", inet_ntoa(remoteAddr.sin_addr));
                 recvThreads[i] = CreateThread(0, 0, recv_thread, &playerId[i], 0, 0);
             }
-
-            //create move thread
-            moveThread = CreateThread(0, 0, move_thread, 0, 0, 0);
-
-            //wait for move thread shutdown
-            WaitForSingleObject(moveThread, INFINITE);
-            CloseHandle(moveThread);
 
             //wait for send thread shutdown
             WaitForSingleObject(sendThread, INFINITE);
