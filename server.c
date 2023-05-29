@@ -34,7 +34,7 @@ DWORD WINAPI send_thread() {
 
 DWORD WINAPI recv_thread(LPVOID lpParameter) {
     int *id = (int *) lpParameter;
-    while (player[0].status != DEAD || player[1].status != DEAD) {
+    while (player[*id].status != DEAD) {
         //receive data from client
         char recvData;
         recv(ClientSocket[*id], &recvData, 1, 0);
