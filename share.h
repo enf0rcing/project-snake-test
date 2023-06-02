@@ -8,16 +8,17 @@
 #define ROW 25
 #define COL 50
 
-#define INIT (-10)
-#define DEAD 10
-
 #define WALL '#'
 #define AIR ' '
 #define APPLE '$'
 
+typedef enum status {
+    up, left, down, right, still = 10, dead = -10
+} Status;
+
 typedef struct snakeInfo {
-    int x[ROW * COL], y[ROW * COL];
-    int len, status, newStatus;
+    int len, x[ROW * COL], y[ROW * COL];
+    Status current, new;
     char symbol;
 } Snake;
 

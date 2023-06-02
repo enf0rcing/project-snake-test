@@ -7,7 +7,7 @@
 #include <winsock2.h>
 #include "share.h"
 
-char map[ROW * COL + 1], mapOld[ROW * COL];
+char map[ROW * COL + 1], cache[ROW * COL];
 
 void cursor_show(int flag) {
     CONSOLE_CURSOR_INFO cursorInfo = {.dwSize = 1, .bVisible = flag};
@@ -23,10 +23,10 @@ void render_map() {
     int score[2] = {0};
     for (int i = 0; i < ROW; i += 1) {
         for (int j = 0; j < COL; j += 1) {
-            if (map[i * COL + j] != mapOld[i * COL + j]) {
+            if (map[i * COL + j] != cache[i * COL + j]) {
                 cursor_go(j, i);
                 printf("%c", map[i * COL + j]);
-                mapOld[i * COL + j] = map[i * COL + j];
+                cache[i * COL + j] = map[i * COL + j];
             }
             for (int k = 0; k < 2; k += 1) {
                 if (map[i * COL + j] == SnakeSymbol[k]) {
@@ -71,12 +71,12 @@ void single_player() {
     Snake player;
     init_snake(map, SnakeSymbol[0], &player);
 
-    memset(mapOld, AIR, sizeof(mapOld));
+    memset(cache, AIR, sizeof(cache));
     render_map();
     print_info(1);
 
     //start game
-    while (player.status != DEAD) {
+    while (player.current != dead) {
         char input = 0;
         if (kbhit()) {
             input = (char) getch();
@@ -129,7 +129,7 @@ void multi_player() {
     system("cls");
     cursor_show(0);
 
-    memset(mapOld, AIR, sizeof(mapOld));
+    memset(cache, AIR, sizeof(cache));
     print_info(2);
     while (1) {
         //receive data from server

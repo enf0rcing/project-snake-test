@@ -12,9 +12,9 @@ Snake player[2];
 SOCKET ClientSocket[2];
 
 DWORD WINAPI send_thread() {
-    while (player[0].status != DEAD || player[1].status != DEAD) {
+    while (player[0].current != dead || player[1].current != dead) {
         for (int i = 0; i < 2; i += 1) {
-            if (player[i].status != DEAD) {
+            if (player[i].current != dead) {
                 move_snake(map, apple, &player[i]);
             }
         }
@@ -34,12 +34,16 @@ DWORD WINAPI send_thread() {
 
 DWORD WINAPI recv_thread(LPVOID lpParameter) {
     int *id = (int *) lpParameter;
-    while (player[*id].status != DEAD) {
+    while (1) {
         //receive data from client
         char recvData;
         recv(ClientSocket[*id], &recvData, 1, 0);
 
-        process_input(recvData, &player[*id]);
+        if (player[*id].current != dead) {
+            process_input(recvData, &player[*id]);
+        } else {
+            break;
+        }
     }
     return 0;
 }

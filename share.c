@@ -6,9 +6,9 @@
 
 const char SnakeSymbol[2] = {"*o"};
 const int shift[4][2] = {{-1, 0},
-                         {0,  1},
+                         {0,  -1},
                          {1,  0},
-                         {0,  -1}};
+                         {0,  1}};
 
 void init_map(char *map) {
     for (int i = 0; i < ROW; i += 1) {
@@ -33,8 +33,8 @@ void init_apple(char *map, int *apple) {
 
 void init_snake(char *map, char symbol, Snake *p) {
     p->len = 1;
-    p->status = INIT;
-    p->newStatus = 0;
+    p->current = still;
+    p->new = still;
     p->symbol = symbol;
     do {
         p->x[0] = rand() % ROW;
@@ -46,38 +46,37 @@ void init_snake(char *map, char symbol, Snake *p) {
 void process_input(char input, Snake *p) {
     switch (input) {
         case 'w':
-            p->newStatus = 0;
-            break;
-        case 'd':
-            p->newStatus = 1;
-            break;
-        case 's':
-            p->newStatus = 2;
+            p->new = up;
             break;
         case 'a':
-            p->newStatus = 3;
+            p->new = left;
+            break;
+        case 's':
+            p->new = down;
+            break;
+        case 'd':
+            p->new = right;
             break;
         case 'q':
-            p->newStatus = DEAD;
-            break;
+            p->current = dead;
+            return;
         default:
-            p->newStatus = -1;
-            break;
+            return;
     }
-    if (p->newStatus == -1 || abs(p->newStatus - p->status) == 2) {
+    if (abs((int) (p->new - p->current)) == 2) {
         return;
     }
-    p->status = p->newStatus;
+    p->current = p->new;
 }
 
 void move_snake(char *map, int *apple, Snake *p) {
-    if (p->status == DEAD || p->status == INIT) {
+    if (p->current == still || p->current == dead) {
         return;
     }
-    int newHeadX = p->x[0] + shift[p->status][0], newHeadY = p->y[0] + shift[p->status][1];
+    int newHeadX = p->x[0] + shift[p->current][0], newHeadY = p->y[0] + shift[p->current][1];
     if (map[newHeadX * COL + newHeadY] == SnakeSymbol[0] || map[newHeadX * COL + newHeadY] == SnakeSymbol[1] ||
         map[newHeadX * COL + newHeadY] == WALL) {
-        p->status = DEAD;
+        p->current = dead;
         return;
     }
     if (newHeadX == apple[0] && newHeadY == apple[1]) {
