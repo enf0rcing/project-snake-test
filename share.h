@@ -12,6 +12,8 @@
 #define AIR ' '
 #define APPLE '$'
 
+#define Pos(x, y) ((x) * COL + y)
+
 typedef enum status {
     up, left, down, right, still = 10, dead = -10
 } Status;

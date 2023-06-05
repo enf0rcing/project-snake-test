@@ -23,13 +23,14 @@ void render_map() {
     int score[2] = {0};
     for (int i = 0; i < ROW; i += 1) {
         for (int j = 0; j < COL; j += 1) {
-            if (map[i * COL + j] != cache[i * COL + j]) {
+            int pos = Pos(i, j);
+            if (map[pos] != cache[pos]) {
                 cursor_go(j, i);
-                printf("%c", map[i * COL + j]);
-                cache[i * COL + j] = map[i * COL + j];
+                printf("%c", map[pos]);
+                cache[pos] = map[pos];
             }
             for (int k = 0; k < 2; k += 1) {
-                if (map[i * COL + j] == SnakeSymbol[k]) {
+                if (map[pos] == SnakeSymbol[k]) {
                     score[k] += 1;
                 }
             }
