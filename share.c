@@ -20,7 +20,7 @@ void init_map(Map *map) {
             }
         }
     }
-    map->space = SPACE;
+    map->space = (ROW - 2) * (COL - 2);
 }
 
 void init_food(Map *map) {
@@ -30,8 +30,8 @@ void init_food(Map *map) {
     map->space -= 1;
     int x, y;
     do {
-        x = rand() % ROW;
-        y = rand() % COL;
+        x = rand() % (ROW - 2) + 1;
+        y = rand() % (COL - 2) + 1;
     } while (map->data[x][y] != AIR);
     map->data[x][y] = FOOD;
 }
@@ -46,8 +46,8 @@ void init_snake(Map *map, Snake *p, char symbol) {
     p->new = still;
     p->symbol = symbol;
     do {
-        p->x[0] = rand() % ROW;
-        p->y[0] = rand() % COL;
+        p->x[0] = rand() % (ROW - 2) + 1;
+        p->y[0] = rand() % (COL - 2) + 1;
     } while (map->data[p->x[0]][p->y[0]] != AIR);
     map->data[p->x[0]][p->y[0]] = p->symbol;
 }

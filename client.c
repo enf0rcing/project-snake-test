@@ -128,14 +128,12 @@ void multi_player() {
     system("cls");
     cursor_show(0);
 
+    map.space = 1;
     memset(cache, AIR, sizeof(cache));
     print_info(2);
-    while (1) {
+    while (map.space) {
         //receive data from server
         recv(ConnectSocket, (char *) &map, sizeof(map), 0);
-        if (!map.space) {
-            break;
-        }
         render_map();
 
         //send data to server

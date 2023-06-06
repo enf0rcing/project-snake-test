@@ -7,24 +7,23 @@
 #define DEFAULT_PORT 23333
 #define ROW 25
 #define COL 50
-#define SPACE ((ROW - 2) * (COL - 2))
 
 #define WALL '#'
 #define AIR ' '
 #define FOOD '$'
 
-typedef enum status {
+enum status {
     up, left, down, right, still = 10, dead = -10
-} Status;
+};
 
-typedef struct map {
+typedef struct mapInfo {
     char data[ROW][COL];
     int space;
 } Map;
 
 typedef struct snakeInfo {
-    int len, x[SPACE], y[SPACE];
-    Status current, new;
+    int len, x[(ROW - 2) * (COL - 2)], y[(ROW - 2) * (COL - 2)];
+    enum status current, new;
     char symbol;
 } Snake;
 
