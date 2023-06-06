@@ -7,7 +7,8 @@
 #include <winsock2.h>
 #include "share.h"
 
-char map[ROW * COL + 1], cache[ROW * COL];
+Map map;
+char cache[ROW][COL];
 
 void cursor_show(int flag) {
     CONSOLE_CURSOR_INFO cursorInfo = {.dwSize = 1, .bVisible = flag};
@@ -23,14 +24,13 @@ void render_map() {
     int score[2] = {0};
     for (int i = 0; i < ROW; i += 1) {
         for (int j = 0; j < COL; j += 1) {
-            int pos = Pos(i, j);
-            if (map[pos] != cache[pos]) {
+            if (map.data[i][j] != cache[i][j]) {
                 cursor_go(j, i);
-                printf("%c", map[pos]);
-                cache[pos] = map[pos];
+                printf("%c", map.data[i][j]);
+                cache[i][j] = map.data[i][j];
             }
             for (int k = 0; k < 2; k += 1) {
-                if (map[pos] == SnakeSymbol[k]) {
+                if (map.data[i][j] == SnakeSymbol[k]) {
                     score[k] += 1;
                 }
             }
@@ -48,7 +48,6 @@ void print_info(int flag) {
     if (flag == 0) {
         cursor_go(0, ROW);
         printf("Game over.\n");
-        printf("Press any key to continue . . .\n");
     } else {
         cursor_go(COL + 1, 0);
         printf("Control: \"wasd\"");
@@ -65,30 +64,29 @@ void single_player() {
     system("cls");
     srand(time(0));
 
-    init_map(map);
-    int apple[2];
-    init_apple(map, apple);
+    init_map(&map);
+    init_food(&map);
 
     Snake player;
-    init_snake(map, SnakeSymbol[0], &player);
+    init_snake(&map, &player, SnakeSymbol[0]);
 
     memset(cache, AIR, sizeof(cache));
     render_map();
     print_info(1);
 
     //start game
-    while (player.current != dead) {
+    while (map.space && player.current != dead) {
         char input = 0;
         if (kbhit()) {
             input = (char) getch();
         }
-        process_input(input, &player);
-        move_snake(map, apple, &player);
+        process_input(&player, input);
+        move_snake(&map, &player);
         render_map();
         Sleep(200);
     }
     print_info(0);
-    getch();
+    system("pause");
 }
 
 void multi_player() {
@@ -134,8 +132,8 @@ void multi_player() {
     print_info(2);
     while (1) {
         //receive data from server
-        recv(ConnectSocket, map, sizeof(map), 0);
-        if (!map[ROW * COL]) {
+        recv(ConnectSocket, (char *) &map, sizeof(map), 0);
+        if (!map.space) {
             break;
         }
         render_map();
@@ -146,12 +144,12 @@ void multi_player() {
             send(ConnectSocket, &sendData, 1, 0);
         }
     }
-    print_info(0);
-    char sendData = (char) getch();
-    send(ConnectSocket, &sendData, 1, 0);
     //clean up
     closesocket(ConnectSocket);
     WSACleanup();
+
+    print_info(0);
+    system("pause");
 }
 
 int init_ui() {

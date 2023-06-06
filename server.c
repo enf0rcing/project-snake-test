@@ -6,28 +6,27 @@
 #include <winsock2.h>
 #include "share.h"
 
-char map[ROW * COL + 1];
-int apple[2];
+Map map;
 Snake player[2];
 SOCKET ClientSocket[2];
 
 DWORD WINAPI send_thread() {
-    while (player[0].current != dead || player[1].current != dead) {
+    while (map.space && (player[0].current != dead || player[1].current != dead)) {
         for (int i = 0; i < 2; i += 1) {
             if (player[i].current != dead) {
-                move_snake(map, apple, &player[i]);
+                move_snake(&map, &player[i]);
             }
         }
         for (int i = 0; i < 2; i += 1) {
             //send data to clients
-            send(ClientSocket[i], map, sizeof(map), 0);
+            send(ClientSocket[i], (char *) &map, sizeof(map), 0);
         }
         Sleep(200);
     }
-    map[ROW * COL] = 0;
+    map.space = 0;
     for (int i = 0; i < 2; i += 1) {
         //send data to clients
-        send(ClientSocket[i], map, sizeof(map), 0);
+        send(ClientSocket[i], (char *) &map, sizeof(map), 0);
     }
     return 0;
 }
@@ -40,7 +39,7 @@ DWORD WINAPI recv_thread(LPVOID lpParameter) {
         recv(ClientSocket[*id], &recvData, 1, 0);
 
         if (player[*id].current != dead) {
-            process_input(recvData, &player[*id]);
+            process_input(&player[*id], recvData);
         } else {
             break;
         }
@@ -78,14 +77,14 @@ int main() {
         int playerId[2] = {0, 1};
 
         while (1) {
-            printf("——————Starting a new game.——————\n");
+            printf("--------Starting a new game.--------\n");
             srand(time(0));
             HANDLE sendThread, recvThreads[2];
 
-            init_map(map);
-            init_apple(map, apple);
+            init_map(&map);
+            init_food(&map);
             for (int i = 0; i < 2; i += 1) {
-                init_snake(map, SnakeSymbol[i], &player[i]);
+                init_snake(&map, &player[i], SnakeSymbol[i]);
             }
 
             //create send thread
@@ -103,13 +102,13 @@ int main() {
             WaitForSingleObject(sendThread, INFINITE);
             CloseHandle(sendThread);
 
-            printf("Game over.\n");
-
             //wait for recv threads shutdown
             WaitForMultipleObjects(2, recvThreads, 1, INFINITE);
             for (int i = 0; i < 2; i += 1) {
                 CloseHandle(recvThreads[i]);
             }
+
+            printf("Game over.\n");
         }
     }
     //clean up
