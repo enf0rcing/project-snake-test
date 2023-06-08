@@ -10,27 +10,34 @@
 Map map;
 char cache[ROW][COL];
 
-void cursor_show(int flag) {
-    CONSOLE_CURSOR_INFO cursorInfo = {.dwSize = 1, .bVisible = flag};
-    SetConsoleCursorInfo(GetStdHandle(STD_OUTPUT_HANDLE), &cursorInfo);
+void cursorShow(int flag) {
+    CONSOLE_CURSOR_INFO cursor_info = {
+        .dwSize = 1,
+        .bVisible = flag
+    };
+    SetConsoleCursorInfo(GetStdHandle(STD_OUTPUT_HANDLE), &cursor_info);
 }
 
-void cursor_go(int x, int y) {
-    COORD pos = {.X = (short) x, .Y = (short) y};
+void cursorGo(int x, int y) {
+    COORD pos = {
+        .X = (short) x,
+        .Y = (short) y
+    };
     SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), pos);
 }
 
-void render_map() {
+void renderMap() {
     int score[2] = {0};
+
     for (int i = 0; i < ROW; i += 1) {
         for (int j = 0; j < COL; j += 1) {
             if (map.data[i][j] != cache[i][j]) {
-                cursor_go(j, i);
+                cursorGo(j, i);
                 printf("%c", map.data[i][j]);
                 cache[i][j] = map.data[i][j];
             }
             for (int k = 0; k < 2; k += 1) {
-                if (map.data[i][j] == SnakeSymbol[k]) {
+                if (map.data[i][j] == Snake_Symbol[k]) {
                     score[k] += 1;
                 }
             }
@@ -38,86 +45,91 @@ void render_map() {
     }
     for (int i = 0; i < 2; i += 1) {
         if (score[i]) {
-            cursor_go(COL + 16, 3 + i);
+            cursorGo(COL + 16, 3 + i);
             printf("%d", score[i] - 1);
         }
     }
 }
 
-void print_info(int flag) {
+void printInfo(int flag) {
     if (flag == 0) {
-        cursor_go(0, ROW);
+        cursorGo(0, ROW);
         printf("Game over.\n");
     } else {
-        cursor_go(COL + 1, 0);
+        cursorGo(COL + 1, 0);
         printf("Control: \"wasd\"");
-        cursor_go(COL + 1, 1);
+        cursorGo(COL + 1, 1);
         printf("Quit: \"q\"");
         for (int i = 0; i < flag; i += 1) {
-            cursor_go(COL + 1, i + 3);
+            cursorGo(COL + 1, i + 3);
             printf("Player%d score: ", i + 1);
         }
     }
 }
 
-void single_player() {
+void singlePlayer() {
     system("cls");
     srand(time(0));
 
-    init_map(&map);
-    init_food(&map);
-
     Snake player;
-    init_snake(&map, &player, SnakeSymbol[0]);
+    char input;
+
+    initMap(&map);
+    initFood(&map);
+    initSnake(&map, &player, Snake_Symbol[0]);
 
     memset(cache, AIR, sizeof(cache));
-    render_map();
-    print_info(1);
+    renderMap();
+    printInfo(1);
 
     //start game
     while (map.space && player.current != dead) {
-        char input = 0;
         if (kbhit()) {
             input = (char) getch();
         }
-        process_input(&player, input);
-        move_snake(&map, &player);
-        render_map();
+        processInput(&player, input);
+        moveSnake(&map, &player);
+        renderMap();
         Sleep(200);
     }
-    print_info(0);
+    printInfo(0);
     system("pause");
 }
 
-void multi_player() {
+void multiPlayer() {
     system("cls");
-    cursor_show(1);
+    cursorShow(1);
+
+    WSADATA wsa_data;
+    SOCKET connect_socket;
+    struct sockaddr_in hints;
+    char server_ip[16];
+    char send_data;
 
     //init WinSock
-    WSADATA wsaData;
-    WSAStartup(MAKEWORD(2, 2), &wsaData);
+    WSAStartup(MAKEWORD(2, 2), &wsa_data);
 
-    //create a socket to connect
-    SOCKET ConnectSocket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
-    char targetIp[20];
+    //create connect socket
+    connect_socket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+
+    //get server ip address
     while (1) {
         printf("Enter the server ip address: ");
-        scanf("%s", targetIp);
-        if (inet_addr(targetIp) == INADDR_NONE) {
+        scanf("%s", server_ip);
+        if (inet_addr(server_ip) == INADDR_NONE) {
             printf("Invalid ip address, try again.\n");
         } else {
             break;
         }
     }
-    struct sockaddr_in hints;
-    memset(&hints, 0, sizeof(hints));
-    hints.sin_family = AF_INET;
-    hints.sin_addr.s_addr = inet_addr(targetIp);
-    hints.sin_port = htons(DEFAULT_PORT);
 
     //connect to the server
-    if (connect(ConnectSocket, (SOCKADDR *) &hints, sizeof(hints)) == SOCKET_ERROR) {
-        closesocket(ConnectSocket);
+    memset(&hints, 0, sizeof(hints));
+    hints.sin_family = AF_INET;
+    hints.sin_addr.s_addr = inet_addr(server_ip);
+    hints.sin_port = htons(DEFAULT_PORT);
+    if (connect(connect_socket, (SOCKADDR *) &hints, sizeof(hints)) == SOCKET_ERROR) {
+        closesocket(connect_socket);
         WSACleanup();
         printf("Failed to connect to the server.\n");
         system("pause");
@@ -126,66 +138,71 @@ void multi_player() {
 
     //connected
     system("cls");
-    cursor_show(0);
+    cursorShow(0);
 
-    map.space = 1;
     memset(cache, AIR, sizeof(cache));
-    print_info(2);
-    while (map.space) {
+    printInfo(2);
+    while (1) {
         //receive data from server
-        recv(ConnectSocket, (char *) &map, sizeof(map), 0);
-        render_map();
+        recv(connect_socket, (char *) &map, sizeof(map), 0);
+        renderMap();
 
+        if (!map.space) {
+            shutdown(connect_socket, SD_BOTH);
+            break;
+        }
         //send data to server
         if (kbhit()) {
-            char sendData = (char) getch();
-            send(ConnectSocket, &sendData, 1, 0);
+            send_data = (char) getch();
+            send(connect_socket, &send_data, 1, 0);
         }
     }
     //clean up
-    closesocket(ConnectSocket);
+    closesocket(connect_socket);
     WSACleanup();
 
-    print_info(0);
+    printInfo(0);
     system("pause");
 }
 
-int init_ui() {
+int initUi() {
     system("cls");
-    cursor_show(0);
-
+    cursorShow(0);
     printf("Choose a game mode:\n");
     printf("   Single player.\n");
     printf("   Multiplayer.\n");
     printf("   Quit.\n");
-    int choose = 1;
+
+    int choice = 1;
+    char input;
+
     while (1) {
-        cursor_go(0, choose);
+        cursorGo(0, choice);
         printf("->");
-        cursor_go(0, choose);
-        char input = (char) getch();
+        cursorGo(0, choice);
+        input = (char) getch();
         switch (input) {
             case 'w':
                 printf("  ");
-                choose -= 1;
-                if (choose == 0) {
-                    choose = 3;
+                choice -= 1;
+                if (choice == 0) {
+                    choice = 3;
                 }
                 break;
             case 's':
                 printf("  ");
-                choose += 1;
-                if (choose == 4) {
-                    choose = 1;
+                choice += 1;
+                if (choice == 4) {
+                    choice = 1;
                 }
                 break;
             case 13:
-                if (choose == 1) {
-                    single_player();
+                if (choice == 1) {
+                    singlePlayer();
                     return 1;
                 }
-                if (choose == 2) {
-                    multi_player();
+                if (choice == 2) {
+                    multiPlayer();
                     return 1;
                 }
                 return 0;
@@ -196,7 +213,7 @@ int init_ui() {
 }
 
 int main() {
-    while (init_ui()) {
+    while (initUi()) {
     }
     return 0;
 }

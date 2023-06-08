@@ -16,28 +16,28 @@ enum status {
     up, left, down, right, still = 10, dead = -10
 };
 
-typedef struct mapInfo {
+typedef struct map_info {
     char data[ROW][COL];
     int space;
 } Map;
 
-typedef struct snakeInfo {
+typedef struct snake_info {
     int len, x[(ROW - 2) * (COL - 2)], y[(ROW - 2) * (COL - 2)];
     enum status current, new;
     char symbol;
 } Snake;
 
-extern const char SnakeSymbol[2];
+extern const char Snake_Symbol[2];
 
-void init_map(Map *);
+void initMap(Map *map);
 
-void init_food(Map *);
+void initFood(Map *map);
 
-void init_snake(Map *, Snake *, char);
+void initSnake(Map *map, Snake *p, char symbol);
 
-void process_input(Snake *, char);
+void processInput(Snake *p, char input);
 
-void move_snake(Map *, Snake *);
+void moveSnake(Map *map, Snake *p);
 
 #endif //SNAKE_TEST_SHARE_H
 
