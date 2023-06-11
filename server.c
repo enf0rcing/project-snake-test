@@ -1,8 +1,10 @@
 //
 // Created by V on 2023/4/26.
 //
+
 #include <stdio.h>
 #include <time.h>
+#include <pthread.h>
 #include <winsock2.h>
 #include "share.h"
 
@@ -10,7 +12,7 @@ Map map;
 Snake player[2];
 SOCKET client_socket[2];
 
-DWORD WINAPI sendThread() {
+void* sendThread() {
     while (map.space && (player[0].current != dead || player[1].current != dead)) {
         for (int i = 0; i < 2; i += 1) {
             if (player[i].current != dead) {
@@ -32,8 +34,8 @@ DWORD WINAPI sendThread() {
     return 0;
 }
 
-DWORD WINAPI rcvThread(LPVOID lp_param) {
-    int id = *(int *) lp_param;
+void* rcvThread(void *param) {
+    int id = *((int *) param);
     char rcv_data;
 
     while (1) {
@@ -53,7 +55,6 @@ int main() {
     WSADATA wsa_data;
     SOCKET listen_socket;
     struct sockaddr_in hints;
-    int player_id[2] = {0, 1};
 
     //init WinSock
     WSAStartup(MAKEWORD(2, 2), &wsa_data);
@@ -79,7 +80,8 @@ int main() {
             printf("--------Starting a new game.--------\n");
             srand(time(0));
 
-            HANDLE send_thread, rcv_thread[2];
+            pthread_t send_thread, rcv_thread[2];
+            int player_id[2] = {0, 1};
 
             initMap(&map);
             initFood(&map);
@@ -88,24 +90,22 @@ int main() {
             }
 
             //create send thread
-            send_thread = CreateThread(0, 0, sendThread, 0, 0, 0);
+            pthread_create(&send_thread, 0, sendThread, 0);
 
             //create rcv threads
             for (int i = 0; i < 2; i += 1) {
                 printf("Waiting for Player%d . . . ", i + 1);
                 client_socket[i] = accept(listen_socket, 0, 0);
                 printf("Connected.\n");
-                rcv_thread[i] = CreateThread(0, 0, rcvThread, &player_id[i], 0, 0);
+                pthread_create(&rcv_thread[i], 0, rcvThread, &player_id[i]);
             }
 
             //wait for send thread shutdown
-            WaitForSingleObject(send_thread, INFINITE);
-            CloseHandle(send_thread);
+            pthread_join(send_thread, 0);
 
             //wait for rcv threads shutdown
-            WaitForMultipleObjects(2, rcv_thread, 1, INFINITE);
             for (int i = 0; i < 2; i += 1) {
-                CloseHandle(rcv_thread[i]);
+                pthread_join(rcv_thread[i], 0);
             }
 
             printf("Game over.\n");

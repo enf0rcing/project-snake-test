@@ -1,6 +1,7 @@
 //
 // Created by V on 2023/5/2.
 //
+
 #include <stdlib.h>
 #include "share.h"
 
@@ -43,7 +44,7 @@ void initSnake(Map *map, Snake *p, char symbol) {
     map->space -= 1;
     p->len = 1;
     p->current = still;
-    p->new = still;
+    p->next = still;
     p->symbol = symbol;
     do {
         p->x[0] = rand() % (ROW - 2) + 1;
@@ -55,16 +56,16 @@ void initSnake(Map *map, Snake *p, char symbol) {
 void processInput(Snake *p, char input) {
     switch (input) {
         case 'w':
-            p->new = up;
+            p->next = up;
             break;
         case 'a':
-            p->new = left;
+            p->next = left;
             break;
         case 's':
-            p->new = down;
+            p->next = down;
             break;
         case 'd':
-            p->new = right;
+            p->next = right;
             break;
         case 'q':
             p->current = dead;
@@ -72,10 +73,10 @@ void processInput(Snake *p, char input) {
         default:
             return;
     }
-    if (abs((int) (p->new - p->current)) == 2) {
+    if (abs((int) (p->next - p->current)) == 2) {
         return;
     }
-    p->current = p->new;
+    p->current = p->next;
 }
 
 void moveSnake(Map *map, Snake *p) {

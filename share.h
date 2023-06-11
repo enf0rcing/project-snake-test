@@ -1,6 +1,7 @@
 //
 // Created by V on 2023/5/2.
 //
+
 #ifndef SNAKE_TEST_SHARE_H
 #define SNAKE_TEST_SHARE_H
 
@@ -23,7 +24,7 @@ typedef struct map_info {
 
 typedef struct snake_info {
     int len, x[(ROW - 2) * (COL - 2)], y[(ROW - 2) * (COL - 2)];
-    enum status current, new;
+    enum status current, next;
     char symbol;
 } Snake;
 
