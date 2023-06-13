@@ -11,6 +11,11 @@
 #include <curses.h>
 #include "share.h"
 
+#define INFO_DEAD 0
+#define INFO_SINGLE 1
+#define INFO_MULTI 2
+#define INFO_UI 3
+
 Map map;
 char cache[ROW][COL];
 
@@ -41,37 +46,56 @@ void renderMap() {
 }
 
 void printInfo(int flag) {
-    if (flag == 0) {
-        move(ROW, 0);
-        printw("Game over.\n");
-        refresh();
-    } else {
-        move(0, COL + 1);
-        printw("Control: \"wasd\"");
-        move(1, COL + 1);
-        printw("Quit: \"q\"");
-        for (int i = 0; i < flag; i += 1) {
-            move(i + 3, COL + 1);
-            printw("Player%d score: ", i + 1);
-        }
+    switch (flag) {
+        case INFO_DEAD:
+            curs_set(1);
+            nodelay(stdscr, 0);
+
+            move(ROW, 0);
+            printw("Game over.\n");
+            printw("Press any key to continue.");
+            break;
+        case INFO_UI:
+            noecho();
+            curs_set(0);
+
+            clear();
+            printw("Choose a game mode:\n");
+            printw("   Single player.\n");
+            printw("   Multiplayer.\n");
+            printw("   Quit.\n");
+            break;
+        default:
+            noecho();
+            curs_set(0);
+            nodelay(stdscr, 1);
+
+            clear();
+            move(0, COL + 1);
+            printw("Control: \"wasd\"");
+            move(1, COL + 1);
+            printw("Quit: \"q\"");
+            for (int i = 0; i < flag; i += 1) {
+                move(i + 3, COL + 1);
+                printw("Player%d score: ", i + 1);
+            }
+            break;
     }
+    refresh();
 }
 
 void singlePlayer() {
-    nodelay(stdscr, 1);
-    clear();
-    srand(time(0));
-
     Snake player;
     char input;
+
+    srand(time(0));
 
     initMap(&map);
     initFood(&map);
     initSnake(&map, &player, Snake_Symbol[0]);
 
     memset(cache, AIR, sizeof(cache));
-    renderMap();
-    printInfo(1);
+    printInfo(INFO_SINGLE);
 
     //start game
     while (map.space && player.current != dead) {
@@ -81,16 +105,11 @@ void singlePlayer() {
         renderMap();
         usleep(200000);
     }
-    printInfo(0);
+    printInfo(INFO_DEAD);
     getchar();
 }
 
 void multiPlayer() {
-    clear();
-    refresh();
-    nodelay(stdscr, 1);
-    echo();
-
     int clientfd;
     struct sockaddr_in hints;
     char server_ip[16];
@@ -100,10 +119,13 @@ void multiPlayer() {
     clientfd = socket(AF_INET, SOCK_STREAM, 0);
 
     //get server ip address
+    echo();
+    curs_set(1);
+    clear();
     while (1) {
         printw("Enter the server ip address: ");
         refresh();
-        scanf("%s", server_ip);
+        scanw("%s", server_ip);
         if (inet_addr(server_ip) == INADDR_NONE) {
             printw("Invalid ip address, try again.\n");
             refresh();
@@ -111,60 +133,49 @@ void multiPlayer() {
             break;
         }
     }
+
     //connect to the server
     memset(&hints, 0, sizeof(hints));
     hints.sin_family = AF_INET;
     hints.sin_addr.s_addr = inet_addr(server_ip);
     hints.sin_port = htons(DEFAULT_PORT);
     if (connect(clientfd, (struct sockaddr *) &hints, sizeof(hints)) == -1) {
-        close(clientfd);
         printw("Failed to connect to the server.\n");
+        printw("Press any key to continue.");
         refresh();
         getchar();
-        return;
-    }
+    } else {
+        //connected
+        memset(cache, AIR, sizeof(cache));
+        printInfo(INFO_MULTI);
+        while (1) {
+            //receive data from server
+            recv(clientfd, (char *) &map, sizeof(map), 0);
+            renderMap();
 
-    //connected
-    clear();
-    noecho();
-
-    memset(cache, AIR, sizeof(cache));
-    printInfo(2);
-    while (1) {
-        //receive data from server
-        recv(clientfd, (char *) &map, sizeof(map), 0);
-        renderMap();
-
-        if (!map.space) {
-            shutdown(clientfd, SHUT_RDWR);
-            break;
+            if (!map.space) {
+                shutdown(clientfd, SHUT_RDWR);
+                break;
+            }
+            //send data to server
+            send_data = getch();
+            if (send_data) {
+                send(clientfd, &send_data, 1, 0);
+            }
+            send_data = 0;
         }
-        //send data to server
-        send_data = getch();
-        if (send_data) {
-            send(clientfd, &send_data, 1, 0);
-        }
-        send_data = 0;
+        printInfo(INFO_DEAD);
+        getchar();
     }
     //clean up
     close(clientfd);
-
-    printInfo(0);
-    getchar();
 }
 
-int initUi() {
-    noecho();
-    clear();
-
-    printw("Choose a game mode:\n");
-    printw("   Single player.\n");
-    printw("   Multiplayer.\n");
-    printw("   Quit.\n");
-
+int renderMenu() {
     int choice = 1;
     char input;
 
+    printInfo(INFO_UI);
     while (1) {
         move(choice, 0);
         printw("->");
@@ -185,7 +196,7 @@ int initUi() {
                     choice = 1;
                 }
                 break;
-            case 'o':
+            case ' ':
                 if (choice == 1) {
                     singlePlayer();
                     return 1;
@@ -194,7 +205,6 @@ int initUi() {
                     multiPlayer();
                     return 1;
                 }
-                
                 return 0;
             default:
                 break;
@@ -206,7 +216,7 @@ int initUi() {
 int main() {
     initscr();
     cbreak();
-    while (initUi()) {
+    while (renderMenu()) {
     }
     endwin();
     return 0;

@@ -32,7 +32,7 @@ void *sendThread() {
     for (int i = 0; i < 2; i += 1) {
         //send data to clients
         send(connfd[i], (char *) &map, sizeof(map), 0);
-        shutdown(connfd[i], SHUT_RDWR);
+        close(connfd[i]);
     }
     return 0;
 }
@@ -111,9 +111,6 @@ int main() {
         }
     }
     //clean up
-    for (int i = 0; i < 2; i += 1) {
-        close(connfd[i]);
-    }
     close(listenfd);
 
     return 0;
