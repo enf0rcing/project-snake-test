@@ -3,6 +3,7 @@
 //
 
 #include <stdlib.h>
+#include <time.h>
 #include "share.h"
 
 const char Snake_Symbol[2] = {"*o"};
@@ -10,6 +11,15 @@ const int shift[4][2] = {{-1, 0},
                          {0,  -1},
                          {1,  0},
                          {0,  1}};
+
+#if defined (__WIN32__)
+
+unsigned int rand_r(unsigned int *seed) {
+    *seed = *seed * 1103515245 + 12345;
+    return (unsigned int) (*seed / 65536) % 32768;
+}
+
+#endif
 
 void initMap(Map *map) {
     for (int i = 0; i < ROW; i += 1) {
@@ -28,32 +38,42 @@ void initFood(Map *map) {
     if (!map->space) {
         return;
     }
-    map->space -= 1;
-    int x, y;
+
+    unsigned int x, y;
+    unsigned int seed = time(0);
+
     do {
-        x = rand() % (ROW - 2) + 1;
-        y = rand() % (COL - 2) + 1;
+        x = rand_r(&seed) % (ROW - 2) + 1;
+        y = rand_r(&seed) % (COL - 2) + 1;
     } while (map->data[x][y] != AIR);
     map->data[x][y] = FOOD;
+    map->space -= 1;
 }
 
 void initSnake(Map *map, Snake *p, char symbol) {
     if (!map->space) {
         return;
     }
+
+    unsigned int seed = time(0);
+
+    do {
+        p->x[0] = rand_r(&seed) % (ROW - 2) + 1;
+        p->y[0] = rand_r(&seed) % (COL - 2) + 1;
+    } while (map->data[p->x[0]][p->y[0]] != AIR);
+    map->data[p->x[0]][p->y[0]] = symbol;
     map->space -= 1;
     p->len = 1;
+    p->symbol = symbol;
     p->current = still;
     p->next = still;
-    p->symbol = symbol;
-    do {
-        p->x[0] = rand() % (ROW - 2) + 1;
-        p->y[0] = rand() % (COL - 2) + 1;
-    } while (map->data[p->x[0]][p->y[0]] != AIR);
-    map->data[p->x[0]][p->y[0]] = p->symbol;
 }
 
 void processInput(Snake *p, char input) {
+    if (p->current == dead) {
+        return;
+    }
+
     switch (input) {
         case 'w':
             p->next = up;
@@ -83,8 +103,10 @@ void moveSnake(Map *map, Snake *p) {
     if (p->current == still || p->current == dead) {
         return;
     }
-    int newX = p->x[0] + shift[p->current][0];
-    int newY = p->y[0] + shift[p->current][1];
+
+    unsigned int newX = p->x[0] + shift[p->current][0];
+    unsigned int newY = p->y[0] + shift[p->current][1];
+
     if (map->data[newX][newY] == Snake_Symbol[0] || map->data[newX][newY] == Snake_Symbol[1] || map->data[newX][newY] == WALL) {
         p->current = dead;
         return;

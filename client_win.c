@@ -4,41 +4,40 @@
 
 #include <stdio.h>
 #include <conio.h>
-#include <time.h>
 #include <winsock2.h>
+#include <ws2tcpip.h>
 #include "share.h"
 
-#define INFO_DEAD 0
+#define INFO_UI 0
 #define INFO_SINGLE 1
 #define INFO_MULTI 2
-#define INFO_UI 3
-
-Map map;
-char cache[ROW][COL];
+#define INFO_DEAD 3
 
 void cursorShow(int flag) {
     CONSOLE_CURSOR_INFO cursor_info = {
         .dwSize = 1,
         .bVisible = flag
     };
+    
     SetConsoleCursorInfo(GetStdHandle(STD_OUTPUT_HANDLE), &cursor_info);
 }
 
 void cursorGo(int x, int y) {
     COORD pos = {
-        .X = (short) x,
-        .Y = (short) y
+        .X = (short) y,
+        .Y = (short) x
     };
+
     SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), pos);
 }
 
-void renderMap() {
+void renderMap(Map map, char cache[][COL]) {
     int score[2] = {0};
 
     for (int i = 0; i < ROW; i += 1) {
         for (int j = 0; j < COL; j += 1) {
             if (map.data[i][j] != cache[i][j]) {
-                cursorGo(j, i);
+                cursorGo(i, j);
                 printf("%c", map.data[i][j]);
                 cache[i][j] = map.data[i][j];
             }
@@ -51,7 +50,7 @@ void renderMap() {
     }
     for (int i = 0; i < 2; i += 1) {
         if (score[i]) {
-            cursorGo(COL + 16, 3 + i);
+            cursorGo(3 + i, COL + 16);
             printf("%d", score[i] - 1);
         }
     }
@@ -62,8 +61,9 @@ void printInfo(int flag) {
         case INFO_DEAD:
             cursorShow(1);
 
-            cursorGo(0, ROW);
+            cursorGo(ROW, 0);
             printf("Game over.\n");
+            system("pause");
             break;
         case INFO_UI:
             cursorShow(0);
@@ -78,28 +78,50 @@ void printInfo(int flag) {
             cursorShow(0);
             
             system("cls");
-            cursorGo(COL + 1, 0);
+            cursorGo(0, COL + 1);
             printf("Control: \"wasd\"");
-            cursorGo(COL + 1, 1);
+            cursorGo(1, COL + 1);
             printf("Quit: \"q\"");
             for (int i = 0; i < flag; i += 1) {
-                cursorGo(COL + 1, i + 3);
+                cursorGo(i + 3, COL + 1);
                 printf("Player%d score: ", i + 1);
             }
             break;
     }
 }
 
-void singlePlayer() {
-    Snake player;
-    char input;
+SOCKET openClientSock(char *host_name) {
+    SOCKET client_socket;
+    struct sockaddr_in hints = {
+        .sin_family = AF_INET,
+        .sin_addr.s_addr = inet_addr(host_name),
+        .sin_port = htons(DEFAULT_PORT)
+    };
 
-    srand(time(0));
+    //create client socket
+    if ((client_socket = socket(hints.sin_family, SOCK_STREAM, IPPROTO_TCP)) == INVALID_SOCKET) {
+        WSACleanup();
+        return -1;
+    }
+
+    //connect to server
+    if (connect(client_socket, (struct sockaddr *) &hints, sizeof(hints)) == SOCKET_ERROR) {
+        closesocket(client_socket);
+        WSACleanup();
+        return -2;
+    }
+    return client_socket;
+}
+
+void singlePlayer() {
+    Map map;
+    Snake player;
+    char cache[ROW][COL];
+    char input;
 
     initMap(&map);
     initFood(&map);
     initSnake(&map, &player, Snake_Symbol[0]);
-
     memset(cache, AIR, sizeof(cache));
     printInfo(INFO_SINGLE);
 
@@ -107,75 +129,70 @@ void singlePlayer() {
     while (map.space && player.current != dead) {
         if (kbhit()) {
             input = (char) getch();
+            processInput(&player, input);
         }
-        processInput(&player, input);
         moveSnake(&map, &player);
-        renderMap();
+        renderMap(map, cache);
         Sleep(200);
     }
     printInfo(INFO_DEAD);
-    system("pause");
 }
 
 void multiPlayer() {
+    Map map;
     WSADATA wsa_data;
-    SOCKET connect_socket;
-    struct sockaddr_in hints;
-    char server_ip[16];
+    SOCKET client_socket;
+    struct in_addr tmp;
+    char cache[ROW][COL];
+    char host_name[16] = {0};
     char send_data;
 
     //init WinSock
     WSAStartup(MAKEWORD(2, 2), &wsa_data);
 
-    //create connect socket
-    connect_socket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
-
-    //get server ip address
     cursorShow(1);
     system("cls");
-    while (1) {
-        printf("Enter the server ip address: ");
-        scanf("%s", server_ip);
-        if (inet_addr(server_ip) == INADDR_NONE) {
+    while (host_name[0] != 'q') {
+        //get server ip address
+        printf("Enter the server ip address(Quit: 'q'): ");
+        scanf("%s", host_name);
+        if (inet_pton(AF_INET, host_name, &tmp) != 1) {
             printf("Invalid ip address, try again.\n");
         } else {
-            break;
+            printf("Connecting . . .\n");
+            //create connect socket
+            client_socket = openClientSock(host_name);
+            switch (client_socket) {
+                case -1:
+                    printf("Failed to create client socket.\n");
+                    system("pause");
+                    return;
+                case -2:
+                    printf("Failed to connect to the server.\n");
+                    system("pause");
+                    return;
+                default:    //connected
+                    memset(cache, AIR, sizeof(cache));
+                    printInfo(INFO_MULTI);
+                    while (1) {
+                        //receive data from server
+                        recv(client_socket, (char *) &map, sizeof(map), 0);
+                        renderMap(map, cache);
+                        if (!map.space) {
+                            closesocket(client_socket);
+                            break;
+                        }
+
+                        if (kbhit()) {
+                            send_data = (char) getch();
+                            send(client_socket, &send_data, 1, 0);
+                        }
+                    }
+                    printInfo(INFO_DEAD);
+                    return;
+            }
         }
     }
-
-    //connect to the server
-    memset(&hints, 0, sizeof(hints));
-    hints.sin_family = AF_INET;
-    hints.sin_addr.s_addr = inet_addr(server_ip);
-    hints.sin_port = htons(DEFAULT_PORT);
-    if (connect(connect_socket, (SOCKADDR *) &hints, sizeof(hints)) == SOCKET_ERROR) {
-        printf("Failed to connect to the server.\n");
-        system("pause");
-    } else {
-        //connected
-        memset(cache, AIR, sizeof(cache));
-        printInfo(INFO_MULTI);
-        while (1) {
-            //receive data from server
-            recv(connect_socket, (char *) &map, sizeof(map), 0);
-            renderMap();
-
-            if (!map.space) {
-                shutdown(connect_socket, SD_BOTH);
-                break;
-            }
-            //send data to server
-            if (kbhit()) {
-                send_data = (char) getch();
-                send(connect_socket, &send_data, 1, 0);
-            }
-        }
-        printInfo(INFO_DEAD);
-        system("pause");
-    }
-    //clean up
-    closesocket(connect_socket);
-    WSACleanup();
 }
 
 int renderMenu() {
@@ -183,11 +200,10 @@ int renderMenu() {
     char input;
     
     printInfo(INFO_UI);
-
     while (1) {
-        cursorGo(0, choice);
+        cursorGo(choice, 0);
         printf("->");
-        cursorGo(0, choice);
+        cursorGo(choice, 0);
         input = (char) getch();
         switch (input) {
             case 'w':

@@ -1,25 +1,21 @@
 //
-// Created by V on 2023/4/25.
+// Created by V on 2023/6/13.
 //
+
 #include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
-#include <time.h>
 #include <unistd.h>
 #include <arpa/inet.h>
 #include <sys/socket.h>
 #include <curses.h>
 #include "share.h"
 
-#define INFO_DEAD 0
+#define INFO_UI 0
 #define INFO_SINGLE 1
 #define INFO_MULTI 2
-#define INFO_UI 3
+#define INFO_DEAD 3
 
-Map map;
-char cache[ROW][COL];
-
-void renderMap() {
+void renderMap(Map map, char cache[][COL]) {
     int score[2] = {0};
 
     for (int i = 0; i < ROW; i += 1) {
@@ -45,6 +41,12 @@ void renderMap() {
     refresh();
 }
 
+void myPause() {
+    printw("Press any key to continue.");
+    refresh();
+    getchar();
+}
+
 void printInfo(int flag) {
     switch (flag) {
         case INFO_DEAD:
@@ -53,7 +55,7 @@ void printInfo(int flag) {
 
             move(ROW, 0);
             printw("Game over.\n");
-            printw("Press any key to continue.");
+            myPause();
             break;
         case INFO_UI:
             noecho();
@@ -72,103 +74,117 @@ void printInfo(int flag) {
 
             clear();
             move(0, COL + 1);
-            printw("Control: \"wasd\"");
+            printw("Control: 'w', 's', 'a', 'd'");
             move(1, COL + 1);
-            printw("Quit: \"q\"");
+            printw("Quit: 'q'");
             for (int i = 0; i < flag; i += 1) {
                 move(i + 3, COL + 1);
                 printw("Player%d score: ", i + 1);
             }
             break;
     }
-    refresh();
 }
 
 void singlePlayer() {
+    Map map;
     Snake player;
+    char cache[ROW][COL];
     char input;
-
-    srand(time(0));
 
     initMap(&map);
     initFood(&map);
     initSnake(&map, &player, Snake_Symbol[0]);
-
     memset(cache, AIR, sizeof(cache));
     printInfo(INFO_SINGLE);
 
     //start game
     while (map.space && player.current != dead) {
-        input = getch();
-        processInput(&player, input);
+        input = (char) getch();
+        if (input != -1) {
+            processInput(&player, input);
+        }
         moveSnake(&map, &player);
-        renderMap();
+        renderMap(map, cache);
         usleep(200000);
     }
     printInfo(INFO_DEAD);
-    getchar();
+}
+
+int openClientSock(char *host_name) {
+    int client_fd;
+    struct sockaddr_in hints = {
+        .sin_family = AF_INET,
+        .sin_addr.s_addr = inet_addr(host_name),
+        .sin_port = htons(DEFAULT_PORT)
+    };
+
+    //create client socket
+    if ((client_fd = socket(hints.sin_family, SOCK_STREAM, IPPROTO_TCP)) < 0) {
+        return -1;
+    }
+
+    //connect to server
+    if (connect(client_fd, (struct sockaddr *) &hints, sizeof(hints)) == -1) {
+        close(client_fd);
+        return -2;
+    }
+    return client_fd;
 }
 
 void multiPlayer() {
-    int clientfd;
-    struct sockaddr_in hints;
-    char server_ip[16];
-    char send_data = 0;
+    Map map;
+    int client_fd;
+    struct in_addr tmp;
+    char cache[ROW][COL] = {0};
+    char host_name[16] = {0};
+    char send_data;
 
-    //create connect socket
-    clientfd = socket(AF_INET, SOCK_STREAM, 0);
-
-    //get server ip address
     echo();
     curs_set(1);
     clear();
-    while (1) {
-        printw("Enter the server ip address: ");
-        refresh();
-        scanw("%s", server_ip);
-        if (inet_addr(server_ip) == INADDR_NONE) {
+    while (host_name[0] != 'q') {
+        //get server ip address
+        printw("Enter the server ip address(Quit: 'q'): ");
+        scanw("%s", host_name);
+        if (inet_pton(AF_INET, host_name, &tmp) != 1) {
             printw("Invalid ip address, try again.\n");
-            refresh();
         } else {
-            break;
+            printw("Connecting . . .\n");
+            refresh();
+            //create connect socket
+            client_fd = openClientSock(host_name);
+            switch (client_fd) {
+                case -1:
+                    printw("Failed to create client socket.\n");
+                    myPause();
+                    return;
+                case -2:
+                    printw("Failed to connect to the server.\n");
+                    myPause();
+                    return;
+                default:    //connected
+                    memset(cache, AIR, sizeof(cache));
+                    printInfo(INFO_MULTI);
+                    while (1) {
+                        //receive data from server
+                        recv(client_fd, (char *) &map, sizeof(map), 0);
+                        renderMap(map, cache);
+                        if (!map.space) {
+                            close(client_fd);
+                            break;
+                        }
+
+                        send_data = (char) getch();
+                        if (send_data != -1) {
+                            //send data to server
+                            send(client_fd, &send_data, 1, 0);
+                        }
+                    }
+                    printInfo(INFO_DEAD);
+                    return;
+            }
         }
     }
-
-    //connect to the server
-    memset(&hints, 0, sizeof(hints));
-    hints.sin_family = AF_INET;
-    hints.sin_addr.s_addr = inet_addr(server_ip);
-    hints.sin_port = htons(DEFAULT_PORT);
-    if (connect(clientfd, (struct sockaddr *) &hints, sizeof(hints)) == -1) {
-        printw("Failed to connect to the server.\n");
-        printw("Press any key to continue.");
-        refresh();
-        getchar();
-    } else {
-        //connected
-        memset(cache, AIR, sizeof(cache));
-        printInfo(INFO_MULTI);
-        while (1) {
-            //receive data from server
-            recv(clientfd, (char *) &map, sizeof(map), 0);
-            renderMap();
-
-            if (!map.space) {
-                shutdown(clientfd, SHUT_RDWR);
-                break;
-            }
-            //send data to server
-            send_data = getch();
-            if (send_data) {
-                send(clientfd, &send_data, 1, 0);
-            }
-            send_data = 0;
-        }
-        printInfo(INFO_DEAD);
-        getchar();
-    }
-    //clean up
-    close(clientfd);
 }
 
 int renderMenu() {
@@ -180,7 +196,7 @@ int renderMenu() {
         move(choice, 0);
         printw("->");
         move(choice, 0);
-        input = getch();
+        input = (char) getch();
         switch (input) {
             case 'w':
                 printw("  ");
@@ -209,7 +225,6 @@ int renderMenu() {
             default:
                 break;
         }
-        refresh();
     }
 }
 

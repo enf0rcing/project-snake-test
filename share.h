@@ -19,11 +19,12 @@ enum status {
 
 typedef struct map_info {
     char data[ROW][COL];
-    int space;
+    unsigned int space;
 } Map;
 
 typedef struct snake_info {
-    int len, x[(ROW - 2) * (COL - 2)], y[(ROW - 2) * (COL - 2)];
+    unsigned int len;
+    unsigned int x[(ROW - 2) * (COL - 2)], y[(ROW - 2) * (COL - 2)];
     enum status current, next;
     char symbol;
 } Snake;
