@@ -20,22 +20,21 @@ enum status {
 typedef struct map_info {
     char data[ROW][COL];
     unsigned int space;
+    unsigned int score[2];
 } Map;
 
 typedef struct snake_info {
+    char symbol;
     unsigned int len;
     unsigned int x[(ROW - 2) * (COL - 2)], y[(ROW - 2) * (COL - 2)];
     enum status current, next;
-    char symbol;
 } Snake;
-
-extern const char Snake_Symbol[2];
 
 void initMap(Map *map);
 
 void initFood(Map *map);
 
-void initSnake(Map *map, Snake *p, char symbol);
+void initSnake(Map *map, Snake *p, int flag);
 
 void processInput(Snake *p, char input);
 

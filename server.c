@@ -105,6 +105,7 @@ void *sendThread() {
             P(&mutex);
             moveSnake(&map, &player[i]);
             V(&mutex);
+            map.score[i] = player[i].len - 1;
         }
         for (int i = 0; i < 2; i += 1) {
             //send data to clients
@@ -189,7 +190,7 @@ int main() {
                 initMap(&map);
                 initFood(&map);
                 for (int i = 0; i < 2; i += 1) {
-                    initSnake(&map, &player[i], Snake_Symbol[i]);
+                    initSnake(&map, &player[i], i);
                 }
 
                 //create send thread

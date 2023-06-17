@@ -31,6 +31,9 @@ void initMap(Map *map) {
         }
     }
     map->space = (ROW - 2) * (COL - 2);
+    for (int i = 0; i < 2; i += 1) {
+        map->score[i] = 0;
+    }
 }
 
 void initFood(Map *map) {
@@ -49,21 +52,21 @@ void initFood(Map *map) {
     map->space -= 1;
 }
 
-void initSnake(Map *map, Snake *p, char symbol) {
+void initSnake(Map *map, Snake *p, int flag) {
     if (!map->space) {
         return;
     }
 
     unsigned int seed = time(0);
 
+    p->symbol = Snake_Symbol[flag];
     do {
         p->x[0] = rand_r(&seed) % (ROW - 2) + 1;
         p->y[0] = rand_r(&seed) % (COL - 2) + 1;
     } while (map->data[p->x[0]][p->y[0]] != AIR);
-    map->data[p->x[0]][p->y[0]] = symbol;
+    map->data[p->x[0]][p->y[0]] = p->symbol;
     map->space -= 1;
     p->len = 1;
-    p->symbol = symbol;
     p->current = still;
     p->next = still;
 }

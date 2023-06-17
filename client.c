@@ -84,8 +84,6 @@ Socket openClientSocket(char *host_name) {
 }
 
 void renderMap(Map map, char cache[][COL]) {
-    int score[2] = {0};
-
     for (int i = 0; i < ROW; i += 1) {
         for (int j = 0; j < COL; j += 1) {
             if (map.data[i][j] != cache[i][j]) {
@@ -93,17 +91,12 @@ void renderMap(Map map, char cache[][COL]) {
                 printf("%c", map.data[i][j]);
                 cache[i][j] = map.data[i][j];
             }
-            for (int k = 0; k < 2; k += 1) {
-                if (map.data[i][j] == Snake_Symbol[k]) {
-                    score[k] += 1;
-                }
-            }
         }
     }
     for (int i = 0; i < 2; i += 1) {
-        if (score[i]) {
+        if (map.score[i]) {
             move(3 + i, COL + 16);
-            printf("%d", score[i] - 1);
+            printf("%d", map.score[i]);
         }
     }
 }
@@ -166,7 +159,7 @@ void printInfo(int flag, char *s) {
                 printf("Quit: 'q'");
                 for (int i = 0; i < flag; i += 1) {
                     move(i + 3, COL + 1);
-                    printf("Player%d score: ", i + 1);
+                    printf("Player%d score: 0", i + 1);
                 }
                 break;
         }
@@ -181,7 +174,7 @@ void singlePlayer() {
 
     initMap(&map);
     initFood(&map);
-    initSnake(&map, &player, Snake_Symbol[0]);
+    initSnake(&map, &player, 0);
     memset(cache, AIR, sizeof(cache));
     printInfo(INFO_SINGLE, 0);
 
@@ -199,6 +192,7 @@ void singlePlayer() {
         #endif
         
         moveSnake(&map, &player);
+        map.score[0] = player.len - 1;
         renderMap(map, cache);
         wait(200);
     }
