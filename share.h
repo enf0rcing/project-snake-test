@@ -42,4 +42,3 @@ void processInput(Snake *p, char input);
 void moveSnake(Map *map, Snake *p);
 
 #endif //SNAKE_TEST_SHARE_H
-

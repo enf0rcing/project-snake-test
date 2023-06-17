@@ -2,9 +2,10 @@
 // Created by V on 2023/5/2.
 //
 
+#include "share.h"
+
 #include <stdlib.h>
 #include <time.h>
-#include "share.h"
 
 const char Snake_Symbol[2] = {"*o"};
 const int shift[4][2] = {{-1, 0},
@@ -13,12 +14,10 @@ const int shift[4][2] = {{-1, 0},
                          {0,  1}};
 
 #if defined (__WIN32__)
-
 unsigned int rand_r(unsigned int *seed) {
     *seed = *seed * 1103515245 + 12345;
     return (unsigned int) (*seed / 65536) % 32768;
 }
-
 #endif
 
 void initMap(Map *map) {
