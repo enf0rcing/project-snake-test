@@ -60,15 +60,14 @@ void initSnake(Map *map, Snake *p, int flag) {
     unsigned int seed = time(0);
 
     p->symbol = Snake_Symbol[flag];
+    p->current = still;
+    p->len = 1;
     do {
         p->x[0] = rand_r(&seed) % (ROW - 2) + 1;
         p->y[0] = rand_r(&seed) % (COL - 2) + 1;
     } while (map->data[p->x[0]][p->y[0]] != AIR);
     map->data[p->x[0]][p->y[0]] = p->symbol;
     map->space -= 1;
-    p->len = 1;
-    p->current = still;
-    p->next = still;
 }
 
 void processInput(Snake *p, char input) {
@@ -76,18 +75,20 @@ void processInput(Snake *p, char input) {
         return;
     }
 
+    enum status tmp;
+
     switch (input) {
         case 'w':
-            p->next = up;
+            tmp = up;
             break;
         case 'a':
-            p->next = left;
+            tmp = left;
             break;
         case 's':
-            p->next = down;
+            tmp = down;
             break;
         case 'd':
-            p->next = right;
+            tmp = right;
             break;
         case 'q':
             p->current = dead;
@@ -95,10 +96,10 @@ void processInput(Snake *p, char input) {
         default:
             return;
     }
-    if (abs((int) (p->next - p->current)) == 2) {
+    if (abs((int) (tmp - p->current)) == 2) {
         return;
     }
-    p->current = p->next;
+    p->current = tmp;
 }
 
 void moveSnake(Map *map, Snake *p) {

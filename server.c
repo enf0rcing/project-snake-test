@@ -167,12 +167,12 @@ int main() {
     switch (listen_socket) {
         case -1:
             printf("Failed to create listen socket.\n");
-            printf("Press any key to continue.");
+            printf("Press 'enter' to continue.");
             getchar();
             break;
         case -2:
             printf("Failed to bind listen socket.\n");
-            printf("Press any key to continue.");
+            printf("Press 'enter' to continue.");
             getchar();
             break;
         default:

@@ -25,9 +25,9 @@ typedef struct map_info {
 
 typedef struct snake_info {
     char symbol;
+    enum status current;
     unsigned int len;
     unsigned int x[(ROW - 2) * (COL - 2)], y[(ROW - 2) * (COL - 2)];
-    enum status current, next;
 } Snake;
 
 void initMap(Map *map);
